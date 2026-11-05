@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Notifications — CampusCare{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; margin: 0 auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); margin: 0;">
+        Campus Notifications
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+        Updates on your claims, suggested matches, and status changes.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <a href="{% url 'items:notification_preferences' %}" class="btn btn-secondary btn-sm" title="Notification Preferences">
+        <i class="fa-solid fa-sliders"></i> Preferences
+      </a>
+      {% if unread_count > 0 %}
+        <form method="post" action="{% url 'items:notifications' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary btn-sm">
+            <i class="fa-solid fa-check-double"></i> Mark All Read ({{ unread_count }})
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="padding: 0;">
+      {% if page_obj %}
+        <ul style="list-style: none; margin: 0; padding: 0;">
+          {% for note in page_obj %}
+            <li style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: flex-start; gap: 1rem; background: {% if not note.is_read %}#f0f7ff{% else %}#ffffff{% endif %};">
+              <div style="width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem;
+                background: {% if note.notification_type == 'claim_status_changed' %}#ecfdf5; color:#10b981;
+                {% elif note.notification_type == 'match_found' %}#eff6ff; color:#2563eb;
+                {% else %}#f5f3ff; color:#8b5cf6;{% endif %};">
+                {% if note.notification_type == 'claim_status_changed' %}
+                  <i class="fa-solid fa-shield-check"></i>
+                {% elif note.notification_type == 'match_found' %}
+                  <i class="fa-solid fa-wand-magic-sparkles"></i>
+                {% else %}
+                  <i class="fa-solid fa-bell"></i>
+                {% endif %}
+              </div>
+
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+                  <strong style="font-size: 0.95rem; color: var(--text-main);">{{ note.title }}</strong>
+                  <span style="font-size: 0.775rem; color: var(--text-light); white-space: nowrap;">
+                    {{ note.created_at|timesince }} ago
+                  </span>
+                </div>
+
+                <p style="font-size: 0.9rem; color: #475569; margin: 0.25rem 0 0.5rem; line-height: 1.5;">
+                  {{ note.message }}
+                </p>
+
+                {% if note.link %}
+                  <a href="{{ note.link }}" class="btn btn-outline-primary btn-sm" style="font-size: 0.8rem; padding: 0.25rem 0.65rem;">
+                    View Details <i class="fa-solid fa-arrow-right"></i>
+                  </a>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+          <div style="padding: 1.25rem;">
+            <div class="pagination" style="margin-top:0;">
+              {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="page-link">
+                  <i class="fa-solid fa-chevron-left"></i>
+                </a>
+              {% endif %}
+
+              {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                  <span class="page-link active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                  <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                {% endif %}
+              {% endfor %}
+
+              {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="page-link">
+                  <i class="fa-solid fa-chevron-right"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
+      {% else %}
+        <div style="padding: 4rem 2rem; text-align: center;">
+          <i class="fa-regular fa-bell-slash" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+          <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.35rem;">
+            No Notifications
+          </h3>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">
+            You have no notifications at this time.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

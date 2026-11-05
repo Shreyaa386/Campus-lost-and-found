@@ -1,0 +1,355 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Campus Incident Heatmap — CampusCare{% endblock %}
+
+{% block admin_extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+  #campusMap {
+    height: 520px;
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    z-index: 1;
+  }
+  .filter-bar {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .leaflet-popup-content-wrapper {
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+  }
+  .hotspot-card {
+    transition: var(--transition);
+  }
+  .hotspot-card:hover {
+    background: #f8fafc;
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0 0 0.25rem 0;">
+      <i class="fa-solid fa-fire text-red-500"></i> Campus Incident Heatmap
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0;">
+      Density analysis of lost and found activity across designated institutional facilities.
+    </p>
+  </div>
+  <div style="display:flex; align-items:center; gap:0.5rem;">
+    <span class="badge" style="background: #e0f2fe; color: #0369a1; padding: 0.5rem 0.75rem; font-weight: 600;">
+      <i class="fa-solid fa-shield-halved"></i> Privacy-Protected Aggregation
+    </span>
+  </div>
+</div>
+
+<!-- Privacy Callout Alert -->
+<div class="card mb-3" style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.85rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.25rem;">
+  <div style="display:flex; align-items:center; gap: 0.75rem;">
+    <i class="fa-solid fa-circle-check text-green-600" style="font-size: 1.25rem;"></i>
+    <div style="font-size: 0.825rem; color: #166534;">
+      <strong>Institutional Privacy Compliance:</strong> Hotspots represent aggregate counts pinned strictly to approved campus facility coordinates. No personal device GPS or exact user locations are ever tracked or stored.
+    </div>
+  </div>
+</div>
+
+<!-- Filter Toolbar -->
+<div class="filter-bar">
+  <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+    <div style="flex: 1; min-width: 140px;">
+      <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.35rem; text-transform: uppercase;">
+        Report Type
+      </label>
+      <select name="type" class="form-select" style="width: 100%;">
+        <option value="all" {% if report_type == 'all' %}selected{% endif %}>All Reports (Lost + Found)</option>
+        <option value="lost" {% if report_type == 'lost' %}selected{% endif %}>Lost Items Only</option>
+        <option value="found" {% if report_type == 'found' %}selected{% endif %}>Found Items Only</option>
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 160px;">
+      <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.35rem; text-transform: uppercase;">
+        Item Category
+      </label>
+      <select name="category" class="form-select" style="width: 100%;">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if category_id == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 140px;">
+      <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.35rem; text-transform: uppercase;">
+        Time Window
+      </label>
+      <select name="days" class="form-select" style="width: 100%;">
+        <option value="7" {% if days == 7 %}selected{% endif %}>Past 7 Days</option>
+        <option value="30" {% if days == 30 %}selected{% endif %}>Past 30 Days</option>
+        <option value="90" {% if days == 90 %}selected{% endif %}>Past 90 Days</option>
+        <option value="365" {% if days == 365 %}selected{% endif %}>Past 1 Year</option>
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+      <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.25rem;">
+        <i class="fa-solid fa-filter"></i> Apply Filters
+      </button>
+      <a href="{% url 'security_dashboard:heatmap' %}" class="btn btn-outline" style="padding: 0.5rem 0.85rem;" title="Reset Filters">
+        <i class="fa-solid fa-rotate-left"></i>
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Heatmap KPI Row -->
+<div class="kpi-grid" style="margin-bottom: 1.5rem;">
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Active Hotspots</div>
+      <div class="kpi-val" style="color: #0284c7;">{{ heatmap_data.total_hotspots }}</div>
+      <div class="kpi-sub">Campus locations with reports</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background: #e0f2fe; color: #0284c7;">
+      <i class="fa-solid fa-location-dot"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Peak Concentration</div>
+      <div class="kpi-val" style="color: #ea580c;">{{ heatmap_data.max_density }}</div>
+      <div class="kpi-sub">Highest reports at a single spot</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background: #ffedd5; color: #ea580c;">
+      <i class="fa-solid fa-temperature-arrow-up"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Time Window</div>
+      <div class="kpi-val" style="color: #6366f1;">{{ days }}d</div>
+      <div class="kpi-sub">Reports in recent period</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background: #e0e7ff; color: #6366f1;">
+      <i class="fa-solid fa-calendar-check"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Report Filter</div>
+      <div class="kpi-val" style="color: #059669; font-size: 1.35rem; text-transform: uppercase;">
+        {{ report_type }}
+      </div>
+      <div class="kpi-sub">Scope of rendered incidents</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background: #d1fae5; color: #059669;">
+      <i class="fa-solid fa-layer-group"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Map Container -->
+<div class="card mb-4" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-sm); margin-bottom: 2rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+    <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--text-main);">
+      <i class="fa-solid fa-map-location-dot text-blue-600"></i> Interactive Campus Density Map
+    </h3>
+    <div style="font-size: 0.75rem; color: var(--text-muted); display:flex; align-items:center; gap:1rem;">
+      <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; margin-right:4px;"></span> High Density</span>
+      <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f97316; margin-right:4px;"></span> Moderate Density</span>
+      <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#3b82f6; margin-right:4px;"></span> Low Density</span>
+    </div>
+  </div>
+
+  {% if heatmap_data.points %}
+    <div id="campusMap"></div>
+  {% else %}
+    <div style="text-align: center; padding: 4rem 1rem; background: #f8fafc; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+      <i class="fa-solid fa-map-pin text-gray-300" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">No Incident Hotspots Detected</h4>
+      <p style="color: var(--text-muted); font-size: 0.875rem; max-width: 480px; margin: 0 auto 1.5rem auto;">
+        No lost or found reports match the selected filters or campus locations lack configured GPS coordinates.
+      </p>
+      <a href="{% url 'security_dashboard:locations' %}" class="btn btn-outline" style="font-size: 0.85rem;">
+        <i class="fa-solid fa-location-crosshairs"></i> Configure Campus Coordinates
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Detailed Hotspots Table -->
+<div class="card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+  <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;">
+    <i class="fa-solid fa-chart-column text-indigo-600"></i> Hotspot Breakdown & Recommendations
+  </h3>
+
+  {% if heatmap_data.points %}
+    <div class="table-responsive">
+      <table class="data-table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">
+            <th style="padding: 0.75rem;">Rank</th>
+            <th style="padding: 0.75rem;">Campus Facility</th>
+            <th style="padding: 0.75rem;">Building / Area</th>
+            <th style="padding: 0.75rem; text-align: center;">Total Reports</th>
+            <th style="padding: 0.75rem; text-align: center;">Lost</th>
+            <th style="padding: 0.75rem; text-align: center;">Found</th>
+            <th style="padding: 0.75rem; text-align: center;">Recovered</th>
+            <th style="padding: 0.75rem;">Security Action Guidance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pt in heatmap_data.points %}
+            <tr class="hotspot-card" style="border-bottom: 1px solid var(--border-color); font-size: 0.875rem;">
+              <td style="padding: 0.85rem 0.75rem; font-weight: 700; color: var(--text-muted);">
+                #{{ forloop.counter }}
+              </td>
+              <td style="padding: 0.85rem 0.75rem;">
+                <div style="font-weight: 700; color: var(--text-main);">{{ pt.name }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-light);">Lat: {{ pt.lat|floatformat:4 }}, Lng: {{ pt.lng|floatformat:4 }}</div>
+              </td>
+              <td style="padding: 0.85rem 0.75rem; color: var(--text-muted);">
+                {{ pt.building|default:"Campus Main" }}
+              </td>
+              <td style="padding: 0.85rem 0.75rem; text-align: center;">
+                <span class="badge" style="background: #fee2e2; color: #b91c1c; font-size: 0.875rem; font-weight: 800; padding: 0.25rem 0.65rem;">
+                  {{ pt.count }}
+                </span>
+              </td>
+              <td style="padding: 0.85rem 0.75rem; text-align: center; color: #dc2626; font-weight: 600;">
+                {{ pt.lost_count }}
+              </td>
+              <td style="padding: 0.85rem 0.75rem; text-align: center; color: #2563eb; font-weight: 600;">
+                {{ pt.found_count }}
+              </td>
+              <td style="padding: 0.85rem 0.75rem; text-align: center; color: #059669; font-weight: 600;">
+                {{ pt.recovered_count }}
+              </td>
+              <td style="padding: 0.85rem 0.75rem; font-size: 0.8rem;">
+                {% if pt.intensity >= 0.7 %}
+                  <span class="badge" style="background:#fee2e2; color:#991b1b;"><i class="fa-solid fa-triangle-exclamation"></i> High Priority Patrol</span>
+                {% elif pt.intensity >= 0.4 %}
+                  <span class="badge" style="background:#fef3c7; color:#92400e;"><i class="fa-solid fa-eye"></i> Periodic Inspection</span>
+                {% else %}
+                  <span class="badge" style="background:#e0f2fe; color:#0369a1;"><i class="fa-solid fa-circle-check"></i> Standard Routine</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0;">No aggregated hotspot data for current filter.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  {% if heatmap_data.points %}
+    const centerLat = {{ heatmap_data.center.lat|default:12.9716 }};
+    const centerLng = {{ heatmap_data.center.lng|default:77.5946 }};
+    const maxDensity = {{ heatmap_data.max_density|default:1 }};
+
+    const map = L.map('campusMap').setView([centerLat, centerLng], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const points = {{ heatmap_data.points|safe }};
+
+    points.forEach(function(pt) {
+      // Calculate color and radius by intensity
+      let fillColor = '#3b82f6';
+      if (pt.intensity >= 0.7) {
+        fillColor = '#ef4444'; // Red
+      } else if (pt.intensity >= 0.4) {
+        fillColor = '#f97316'; // Orange
+      } else {
+        fillColor = '#2563eb'; // Blue
+      }
+
+      const radius = Math.max(12, Math.min(35, 12 + (pt.count / maxDensity) * 23));
+
+      const circle = L.circleMarker([pt.lat, pt.lng], {
+        radius: radius,
+        fillColor: fillColor,
+        color: '#ffffff',
+        weight: 2,
+        opacity: 0.9,
+        fillOpacity: 0.65
+      }).addTo(map);
+
+      const popupContent = `
+        <div style="font-family: inherit; min-width: 180px; padding: 4px;">
+          <div style="font-weight: 800; font-size: 0.95rem; color: #1e293b; margin-bottom: 2px;">
+            ${pt.name}
+          </div>
+          <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">
+            <i class="fa-solid fa-building"></i> ${pt.building || 'Campus Facility'}
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px; margin-bottom: 6px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:3px;">
+              <span>Total Reports:</span>
+              <strong style="color: #0f172a;">${pt.count}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color: #dc2626;">
+              <span>Lost Items:</span>
+              <strong>${pt.lost_count}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color: #2563eb;">
+              <span>Found Items:</span>
+              <strong>${pt.found_count}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color: #059669;">
+              <span>Recovered:</span>
+              <strong>${pt.recovered_count}</strong>
+            </div>
+          </div>
+          <div style="font-size: 0.7rem; color: #64748b; text-align: center;">
+            Intensity Index: <strong>${Math.round(pt.intensity * 100)}%</strong>
+          </div>
+        </div>
+      `;
+
+      circle.bindPopup(popupContent);
+    });
+
+    // Auto-fit bounds if multiple points
+    if (points.length > 1) {
+      const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  {% endif %}
+});
+</script>
+{% endblock %}
+

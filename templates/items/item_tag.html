@@ -1,0 +1,441 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Printable Item Tag — {{ item.title }} — CampusCare{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Item Identification Tag Styles */
+.item-tag-page-wrapper {
+  max-width: 680px;
+  margin: 1.5rem auto 3rem auto;
+  padding: 0 1rem;
+}
+
+.item-tag-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.item-tag-card {
+  background: #ffffff;
+  border: 2px dashed #94a3b8;
+  border-radius: 18px;
+  padding: 2.25rem 2rem;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  text-align: center;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.item-tag-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+}
+
+.tag-institution-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+
+.tag-institution-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1e3a8a;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+}
+
+.tag-institution-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 0.15rem;
+}
+
+/* Reference Code Hero Banner */
+.tag-reference-banner {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  margin: 0.5rem 0 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.tag-reference-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tag-reference-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: #1e40af;
+  letter-spacing: 0.06em;
+  margin: 0.35rem 0 0.5rem 0;
+}
+
+/* Barcode Decorative Accent */
+.tag-barcode-accent {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  height: 28px;
+  margin-top: 0.25rem;
+  opacity: 0.85;
+}
+
+.tag-barcode-accent span {
+  display: inline-block;
+  height: 100%;
+  background: #0f172a;
+  border-radius: 1px;
+}
+
+.tag-item-info {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.tag-item-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.tag-item-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  flex: 1;
+  min-width: 220px;
+}
+
+.tag-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.tag-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.tag-meta-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.tag-meta-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tag-instructions-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  font-size: 0.85rem;
+  color: #1e3a8a;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+
+.tag-instructions-box i {
+  font-size: 1.25rem;
+  color: #2563eb;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.tag-url-canonical {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.775rem;
+  color: #64748b;
+  word-break: break-all;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.tag-privacy-footer {
+  text-align: center;
+  font-size: 0.775rem;
+  color: #64748b;
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Print Layout */
+@media print {
+  .dashboard-sidebar,
+  .sidebar-overlay,
+  .dashboard-top-header,
+  .app-footer,
+  .footer,
+  .navbar,
+  .ai-widget-container,
+  #aiChatWidget,
+  .no-print,
+  .alert,
+  .messages-container {
+    display: none !important;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-layout-container,
+  .dashboard-main-area,
+  .app-main-workspace,
+  .dashboard-body-container,
+  .page-content-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+  }
+
+  .item-tag-page-wrapper {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 1cm !important;
+  }
+
+  .item-tag-card {
+    border: 2px dashed #000000 !important;
+    box-shadow: none !important;
+    width: 360px !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid !important;
+    padding: 1.5rem !important;
+  }
+
+  .tag-reference-banner {
+    border: 2px solid #000000 !important;
+    background: #ffffff !important;
+  }
+
+  .tag-reference-code {
+    color: #000000 !important;
+  }
+
+  .tag-barcode-accent span {
+    background: #000000 !important;
+  }
+
+  .tag-meta-grid {
+    border: 1px solid #000000 !important;
+    background: #ffffff !important;
+  }
+
+  .tag-instructions-box {
+    border: 1px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .tag-instructions-box i {
+    color: #000000 !important;
+  }
+}
+
+@media (max-width: 540px) {
+  .tag-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tag-reference-code {
+    font-size: 1.45rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="item-tag-page-wrapper">
+  <!-- Top Action Navigation -->
+  <div class="item-tag-actions-bar no-print">
+    <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Item
+    </a>
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="{% url 'items:recovery_timeline' item.pk %}" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-timeline"></i> Lifecycle Timeline
+      </a>
+      <button onclick="window.print()" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-print"></i> Print Item Tag
+      </button>
+    </div>
+  </div>
+
+  <!-- Printable Item Identification Tag -->
+  <div class="item-tag-card">
+    <!-- University Branding -->
+    <div class="tag-institution-header">
+      <div class="tag-institution-badge">
+        <i class="fa-solid fa-shield-halved"></i> CampusCare Lost &amp; Found
+      </div>
+      <div class="tag-institution-name">
+        {{ institution_name|default:"Lovely Professional University (LPU), Phagwara, Punjab" }}
+      </div>
+    </div>
+
+    <!-- Prominent Item Reference Code Banner -->
+    <div class="tag-reference-banner">
+      <span class="tag-reference-label">
+        <i class="fa-solid fa-tag"></i> Official Item Tracking Code
+      </span>
+      <div class="tag-reference-code">{{ item_code }}</div>
+      
+      <!-- Visual Asset Identification Barcode Pattern -->
+      <div class="tag-barcode-accent" aria-hidden="true">
+        <span style="width: 2px;"></span>
+        <span style="width: 4px;"></span>
+        <span style="width: 1px;"></span>
+        <span style="width: 3px;"></span>
+        <span style="width: 2px;"></span>
+        <span style="width: 5px;"></span>
+        <span style="width: 1px;"></span>
+        <span style="width: 4px;"></span>
+        <span style="width: 2px;"></span>
+        <span style="width: 3px;"></span>
+        <span style="width: 1px;"></span>
+        <span style="width: 4px;"></span>
+        <span style="width: 2px;"></span>
+        <span style="width: 5px;"></span>
+        <span style="width: 3px;"></span>
+        <span style="width: 2px;"></span>
+        <span style="width: 4px;"></span>
+        <span style="width: 1px;"></span>
+        <span style="width: 3px;"></span>
+        <span style="width: 2px;"></span>
+        <span style="width: 5px;"></span>
+        <span style="width: 2px;"></span>
+      </div>
+    </div>
+
+    <!-- Item Metadata Section -->
+    <div class="tag-item-info">
+      <div class="tag-item-header-row">
+        <h2 class="tag-item-title">{{ item.title }}</h2>
+        <span class="badge badge-{{ item.report_type }}" style="font-size: 0.75rem; text-transform: uppercase;">
+          {{ item.get_report_type_display }}
+        </span>
+      </div>
+
+      <div class="tag-meta-grid">
+        <div class="tag-meta-item">
+          <span class="tag-meta-label">Category</span>
+          <span class="tag-meta-val">
+            <i class="fa-solid {{ item.category.icon|default:'fa-box' }}" style="color: #2563eb;"></i>
+            {{ category_name }}
+          </span>
+        </div>
+
+        <div class="tag-meta-item">
+          <span class="tag-meta-label">Campus Location</span>
+          <span class="tag-meta-val">
+            <i class="fa-solid fa-location-dot" style="color: #ef4444;"></i>
+            {{ item.location.name|default:"LPU Campus" }}
+          </span>
+        </div>
+
+        <div class="tag-meta-item">
+          <span class="tag-meta-label">Date Reported</span>
+          <span class="tag-meta-val">
+            <i class="fa-solid fa-calendar-day" style="color: #2563eb;"></i>
+            {{ item.date_lost_or_found|date:"M d, Y" }}
+          </span>
+        </div>
+
+        <div class="tag-meta-item">
+          <span class="tag-meta-label">Status</span>
+          <span class="tag-meta-val">
+            <i class="fa-solid fa-circle-check" style="color: #16a34a;"></i>
+            {{ item.get_status_display }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Official Helpdesk & Return Instructions -->
+    <div class="tag-instructions-box">
+      <i class="fa-solid fa-hand-holding-heart"></i>
+      <div>
+        <strong style="display: block; font-weight: 700; margin-bottom: 0.2rem;">Found this item on campus?</strong>
+        <span>Please return it to <strong>Campus Security (Block 34 Helpdesk)</strong> or the Central Lost &amp; Found Counter quoting Reference Code <strong>{{ item_code }}</strong>.</span>
+      </div>
+    </div>
+
+    <!-- Safe Canonical Online Record URL -->
+    <div class="tag-url-canonical">
+      <i class="fa-solid fa-link"></i> {{ safe_url }}
+    </div>
+  </div>
+
+  <p class="tag-privacy-footer no-print">
+    <i class="fa-solid fa-shield-halved" style="color: #2563eb;"></i>
+    <span>Privacy Protected: Official campus identification tag. Personal student contact details and verification answers are never printed.</span>
+  </p>
+</div>
+{% endblock %}
+

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Notification Preferences — CampusCare{% endblock %}
+
+{% block content %}
+<div class="container py-8 max-w-2xl mx-auto">
+  <div class="card p-8">
+    <div class="flex items-center gap-3 mb-6 border-b pb-4">
+      <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xl">
+        <i class="fa-solid fa-sliders"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Notification Preferences</h1>
+        <p class="text-sm text-gray-500">Configure how and when CampusCare notifies you</p>
+      </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">In-App Campus Alerts</h3>
+        <div class="space-y-4">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <div class="pt-0.5">
+              {{ form.notify_on_matches }}
+            </div>
+            <div>
+              <span class="text-sm font-semibold text-gray-800">Smart Match Suggestions</span>
+              <p class="text-xs text-gray-500">Receive alerts when an AI/smart match is identified for your reports.</p>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-3 cursor-pointer">
+            <div class="pt-0.5">
+              {{ form.notify_on_claims }}
+            </div>
+            <div>
+              <span class="text-sm font-semibold text-gray-800">Ownership Claims & Reviews</span>
+              <p class="text-xs text-gray-500">Get notified when someone claims your item or your claim status changes.</p>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-3 cursor-pointer">
+            <div class="pt-0.5">
+              {{ form.notify_on_handover }}
+            </div>
+            <div>
+              <span class="text-sm font-semibold text-gray-800">Recovery Handover & OTP Results</span>
+              <p class="text-xs text-gray-500">Alerts when handovers are initiated, OTP codes generated, and returns verified.</p>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-3 cursor-pointer">
+            <div class="pt-0.5">
+              {{ form.notify_on_rewards }}
+            </div>
+            <div>
+              <span class="text-sm font-semibold text-gray-800">Citizenship Rewards & Badges</span>
+              <p class="text-xs text-gray-500">Get celebrated when reward points are credited and badges unlocked.</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="pt-6 border-t">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">External Channels</h3>
+        <div class="space-y-4">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <div class="pt-0.5">
+              {{ form.email_notifications }}
+            </div>
+            <div>
+              <span class="text-sm font-semibold text-gray-800">Send Email Alerts to {{ user.email }}</span>
+              <p class="text-xs text-gray-500">Forward high-priority handover notices to your registered campus email address.</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-6 border-t">
+        <a href="{% url 'items:notifications' %}" class="btn btn-secondary">
+          <i class="fa-solid fa-arrow-left"></i> Back to Notifications
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-check"></i> Save Preferences
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

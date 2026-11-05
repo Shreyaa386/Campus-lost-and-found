@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout & Order Confirmation — CampusCare{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 680px; margin: 3rem auto 5rem auto;">
+  <div class="card p-4" style="background:#ffffff; border:1px solid var(--border-color); border-radius:var(--radius-lg); box-shadow:var(--shadow-md);">
+    <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.25rem; margin-bottom: 1.5rem;">
+      <span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.75rem; font-weight:700;">
+        ORDER CONFIRMATION
+      </span>
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0.5rem 0 0.25rem 0;">
+        Institutional Subscription Upgrade
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">
+        Order reference: <code>{{ session_data.order_id }}</code>
+      </p>
+    </div>
+
+    <!-- Order Summary Table -->
+    <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+      <div style="display:flex; justify-content:space-between; margin-bottom: 0.65rem; font-size: 0.9rem;">
+        <span style="color:var(--text-muted);">Institution:</span>
+        <strong style="color:var(--text-main);">{{ institution.name }}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-bottom: 0.65rem; font-size: 0.9rem;">
+        <span style="color:var(--text-muted);">Target Plan:</span>
+        <strong style="color:var(--primary);">{{ plan.name }}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-bottom: 0.65rem; font-size: 0.9rem;">
+        <span style="color:var(--text-muted);">Billing Cycle:</span>
+        <span style="text-transform: capitalize; font-weight:600;">{{ billing_cycle }}</span>
+      </div>
+      <div style="border-top: 1px dashed var(--border-color); padding-top: 0.75rem; margin-top: 0.75rem; display:flex; justify-content:space-between; font-size: 1.15rem; font-weight: 800;">
+        <span>Total Payable:</span>
+        <span style="color:#16a34a;">₹{{ session_data.amount|floatformat:2 }}</span>
+      </div>
+    </div>
+
+    <!-- Security & PCI Compliance Callout -->
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem; font-size: 0.8rem; color: #1e40af;">
+      <i class="fa-solid fa-lock" style="margin-right: 0.35rem;"></i>
+      <strong>PCI-DSS & RBI Compliance:</strong> CampusCare does not store or process card numbers, CVVs, or net banking secrets. All payments are completed through tokenized gateway sessions.
+    </div>
+
+    <!-- Test Gateway Action -->
+    <div style="text-align: center;">
+      <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;">
+        Gateway Mode: <strong>{{ session_data.key_id }}</strong> (Sandbox Active)
+      </p>
+
+      <form method="post" action="{% url 'payment_webhook' %}" id="mockPaymentForm">
+        {% csrf_token %}
+        <input type="hidden" name="order_id" value="{{ session_data.order_id }}" />
+        <input type="hidden" name="event" value="payment.captured" />
+
+        <div style="display: flex; gap: 0.75rem; justify-content: center;">
+          <a href="{% url 'subscription_plans' %}" class="btn btn-outline" style="padding: 0.65rem 1.25rem;">
+            Cancel
+          </a>
+          <button type="button" class="btn btn-primary" onclick="simulateGatewayPayment()" style="padding: 0.65rem 1.75rem; font-weight: 700;">
+            <i class="fa-solid fa-credit-card"></i> Complete Test Payment (Sandbox)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function simulateGatewayPayment() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Communicating with Gateway...';
+
+  const payload = {
+    event: "payment.captured",
+    order_id: "{{ session_data.order_id }}",
+    transaction_id: "{{ session_data.order_id }}",
+    payload: {
+      payment: {
+        entity: {
+          order_id: "{{ session_data.order_id }}",
+          amount: {{ session_data.amount|floatformat:0 }} * 100,
+          currency: "INR",
+          status: "captured"
+        }
+      }
+    }
+  };
+
+  try {
+    const res = await fetch("{% url 'payment_webhook' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      alert("Test payment captured! Subscription upgraded successfully.");
+      window.location.href = "{% url 'subscription_plans' %}";
+    } else {
+      const err = await res.text();
+      alert("Payment processing returned: " + err);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-credit-card"></i> Retry Payment';
+    }
+  } catch(e) {
+    alert("Connection error: " + e);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-credit-card"></i> Retry Payment';
+  }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Ownership Claims — CampusCare{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); margin: 0;">
+      My Ownership Claims
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+      Track the status of items you have claimed on campus.
+    </p>
+  </div>
+  <a href="{% url 'items:found_items' %}" class="btn btn-secondary">
+    <i class="fa-solid fa-search"></i> Browse Found Items
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body" style="padding: 0;">
+    {% if page_obj %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.775rem; text-transform: uppercase;">
+              <th style="padding: 1rem 1.25rem;">Claim ID</th>
+              <th style="padding: 1rem 1rem;">Claimed Item</th>
+              <th style="padding: 1rem 1rem;">Category</th>
+              <th style="padding: 1rem 1rem;">Status</th>
+              <th style="padding: 1rem 1rem;">Submitted</th>
+              <th style="padding: 1rem 1.25rem; text-align: right;">View</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for claim in page_obj %}
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 1rem 1.25rem; font-weight: 700; color: var(--text-muted);">
+                  #{{ claim.pk }}
+                </td>
+                <td style="padding: 1rem 1rem;">
+                  <a href="{% url 'items:claim_detail' claim.pk %}" style="font-weight: 700; color: var(--text-main);">
+                    {{ claim.item.title }}
+                  </a>
+                  <div style="font-size: 0.775rem; color: var(--text-muted);">
+                    {{ claim.item.location.name|default:"Campus" }}
+                  </div>
+                </td>
+                <td style="padding: 1rem 1rem; color: var(--text-muted);">
+                  {{ claim.item.category.name }}
+                </td>
+                <td style="padding: 1rem 1rem;">
+                  <span class="badge badge-{{ claim.status }}">{{ claim.get_status_display }}</span>
+                </td>
+                <td style="padding: 1rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                  {{ claim.created_at|date:"M d, Y" }}
+                </td>
+                <td style="padding: 1rem 1.25rem; text-align: right;">
+                  <a href="{% url 'items:claim_detail' claim.pk %}" class="btn btn-secondary btn-sm">
+                    View Details <i class="fa-solid fa-arrow-right"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if page_obj.has_other_pages %}
+        <div style="padding: 1.25rem;">
+          <div class="pagination" style="margin-top:0;">
+            {% if page_obj.has_previous %}
+              <a href="?page={{ page_obj.previous_page_number }}" class="page-link">
+                <i class="fa-solid fa-chevron-left"></i>
+              </a>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+              {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}" class="page-link">
+                <i class="fa-solid fa-chevron-right"></i>
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <div style="padding: 4rem 2rem; text-align: center;">
+        <i class="fa-solid fa-file-signature" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.35rem;">No Claims Submitted Yet</h3>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+          Have you seen a found item in the directory that belongs to you? Submit a verification claim to recover it.
+        </p>
+        <a href="{% url 'items:found_items' %}" class="btn btn-primary">
+          <i class="fa-solid fa-magnifying-glass"></i> Browse Found Items
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

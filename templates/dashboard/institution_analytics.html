@@ -1,0 +1,133 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Multi-Institution Analytics & Consortium Overview — CampusCare{% endblock %}
+
+{% block admin_content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0 0 0.25rem 0;">
+      <i class="fa-solid fa-network-wired text-purple-600"></i> Multi-Institution Analytics
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0;">
+      Platform-wide recovery benchmarks, subscription utilization, and cross-campus federated reporting metrics.
+    </p>
+  </div>
+  <div style="display:flex; align-items:center; gap:0.5rem;">
+    <a href="{% url 'subscription_plans' %}" class="btn btn-primary" style="font-size:0.85rem;">
+      <i class="fa-solid fa-layer-group"></i> Manage Subscription Plans
+    </a>
+  </div>
+</div>
+
+<!-- KPI Summary Row -->
+<div class="kpi-grid" style="margin-bottom: 1.5rem;">
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Partner Colleges</div>
+      <div class="kpi-val" style="color: #6366f1;">{{ total_institutions }}</div>
+      <div class="kpi-sub">Participating institutions</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background: #e0e7ff; color: #4338ca;">
+      <i class="fa-solid fa-graduation-cap"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Total Platform Reports</div>
+      <div class="kpi-val" style="color: #2563eb;">{{ total_platform_items }}</div>
+      <div class="kpi-sub">Across all campuses</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background: #dbeafe; color: #1d4ed8;">
+      <i class="fa-solid fa-box-archive"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Successfully Returned</div>
+      <div class="kpi-val" style="color: #16a34a;">{{ total_platform_recovered }}</div>
+      <div class="kpi-sub">Reunited with true owners</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background: #dcfce7; color: #15803d;">
+      <i class="fa-solid fa-handshake"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Platform Recovery Rate</div>
+      <div class="kpi-val" style="color: #0891b2;">{{ platform_recovery_rate }}%</div>
+      <div class="kpi-sub">Global average resolution</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background: #cffafe; color: #0e7490;">
+      <i class="fa-solid fa-chart-pie"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison Table -->
+<div class="card p-4" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+  <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+    <i class="fa-solid fa-table-cells text-indigo-600"></i> Participating Campus Institutions Directory
+  </h3>
+
+  <div class="table-responsive">
+    <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border-color); text-align: left; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+          <th style="padding: 0.75rem;">Institution Name</th>
+          <th style="padding: 0.75rem;">Location</th>
+          <th style="padding: 0.75rem; text-align: center;">Total Reports</th>
+          <th style="padding: 0.75rem; text-align: center;">Recovered</th>
+          <th style="padding: 0.75rem; text-align: center;">Recovery Rate</th>
+          <th style="padding: 0.75rem;">Active Plan</th>
+          <th style="padding: 0.75rem;">Domain Configuration</th>
+          <th style="padding: 0.75rem; text-align: center;">Cross-Campus</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in comparison_data %}
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 0.85rem 0.75rem;">
+              <div style="font-weight: 700; color: var(--text-main);">{{ row.institution.name }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Slug: {{ row.institution.slug }} • Domain: {{ row.institution.domain|default:"campus.edu" }}</div>
+            </td>
+            <td style="padding: 0.85rem 0.75rem; color: var(--text-muted);">
+              {{ row.institution.city }}{% if row.institution.state %}, {{ row.institution.state }}{% endif %}
+            </td>
+            <td style="padding: 0.85rem 0.75rem; text-align: center; font-weight: 700;">
+              {{ row.total_items }}
+            </td>
+            <td style="padding: 0.85rem 0.75rem; text-align: center; color: #16a34a; font-weight: 700;">
+              {{ row.recovered_items }}
+            </td>
+            <td style="padding: 0.85rem 0.75rem; text-align: center;">
+              <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;">
+                {{ row.recovery_rate }}%
+              </span>
+            </td>
+            <td style="padding: 0.85rem 0.75rem;">
+              <span class="badge badge-success">{{ row.plan_name }}</span>
+            </td>
+            <td style="padding: 0.85rem 0.75rem; font-size: 0.8rem; color: var(--text-muted);">
+              <code>{{ row.custom_domain }}</code>
+            </td>
+            <td style="padding: 0.85rem 0.75rem; text-align: center;">
+              {% if row.is_federated %}
+                <i class="fa-solid fa-circle-check text-green-600" title="Cross-Campus Search Enabled"></i>
+              {% else %}
+                <i class="fa-solid fa-circle-xmark text-gray-400" title="Local Campus Only"></i>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">No partner institutions recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

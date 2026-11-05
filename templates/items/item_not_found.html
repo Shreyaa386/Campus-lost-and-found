@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Item Reference Status — CampusCare{% endblock %}
+
+{% block content %}
+<div class="not-found-container" style="max-width: 680px; margin: 3rem auto; padding: 1.5rem; text-align: center;">
+  <div class="card" style="padding: 3rem 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+    <div style="width: 72px; height: 72px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.5rem;">
+      {% if is_deleted %}
+        <i class="fa-solid fa-box-archive"></i>
+      {% else %}
+        <i class="fa-solid fa-magnifying-glass"></i>
+      {% endif %}
+    </div>
+
+    {% if is_deleted %}
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">Item Report Resolved or Archived</h1>
+      <p style="color: #64748b; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">
+        The item report associated with reference <strong class="badge" style="background:#f1f5f9; color:#0f172a; font-family: monospace; font-size: 0.9rem;">{{ item_code }}</strong> has been resolved, completed, or archived by the campus administration.
+      </p>
+    {% else %}
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">Item Reference Not Found</h1>
+      <p style="color: #64748b; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">
+        We could not locate an active report for reference <strong class="badge" style="background:#f1f5f9; color:#0f172a; font-family: monospace; font-size: 0.9rem;">{{ item_code|default:"CC-UNKNOWN" }}</strong>. The item reference code or link may be invalid, or the report has expired and was removed.
+      </p>
+    {% endif %}
+
+    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+      <a href="{% url 'items:dashboard' %}" class="btn btn-primary">
+        <i class="fa-solid fa-house"></i> Campus Dashboard
+      </a>
+      <a href="{% url 'items:found_items' %}" class="btn btn-secondary">
+        <i class="fa-solid fa-binoculars"></i> Browse Found Items
+      </a>
+      <a href="{% url 'items:report_item' 'found' %}" class="btn btn-found">
+        <i class="fa-solid fa-hand-holding-hand"></i> Report a Found Item
+      </a>
+    </div>
+
+    <div style="border-top: 1px solid #f1f5f9; padding-top: 1.5rem; font-size: 0.85rem; color: #94a3b8;">
+      <i class="fa-solid fa-building-columns" style="color: #2563eb;"></i>
+      <strong>Lovely Professional University (LPU), Phagwara, Punjab</strong>
+      <div style="margin-top: 0.25rem;">
+        Need assistance? Visit Central Security (Block 34) or email <a href="mailto:lostandfound@lpu.in" style="color: #2563eb; text-decoration: underline;">lostandfound@lpu.in</a>.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

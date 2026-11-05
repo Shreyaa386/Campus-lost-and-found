@@ -1,0 +1,96 @@
+{% extends 'dashboard/base_admin.html' %}
+
+{% block title %}Manage Categories — Security Dashboard — CampusCare{% endblock %}
+
+{% block admin_content %}
+<div style="margin-bottom: 1.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0;">
+        Item Category Governance
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
+        Configure item classifications, iconography, and catalog visibility.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 2fr; gap:1.5rem;">
+  <!-- Add Category Form -->
+  <div class="card p-4">
+    <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.75rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+      <i class="fa-solid fa-plus text-blue-600"></i> Add New Category
+    </h3>
+    <form method="post" action="{% url 'security_dashboard:categories' %}">
+      {% csrf_token %}
+      <div style="margin-bottom:0.75rem;">
+        <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Category Name</label>
+        {{ form.name }}
+      </div>
+      <div style="margin-bottom:0.75rem;">
+        <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">FontAwesome Icon (e.g. fa-laptop, fa-key)</label>
+        {{ form.icon }}
+      </div>
+      <div style="margin-bottom:0.75rem;">
+        <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Description Scope</label>
+        {{ form.description }}
+      </div>
+      <div style="margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+        {{ form.is_active }}
+        <label style="font-size:0.85rem; font-weight:600;">Active in report forms</label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">
+        Save Category
+      </button>
+    </form>
+  </div>
+
+  <!-- Categories Table -->
+  <div class="card p-0" style="overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table" style="width:100%; font-size:0.875rem; border-collapse:collapse;">
+        <thead style="background:#f8fafc; border-bottom:1.5px solid var(--border-color); text-transform:uppercase; font-size:0.75rem; color:var(--text-muted);">
+          <tr>
+            <th style="padding:0.75rem 1rem;">Category</th>
+            <th style="padding:0.75rem 1rem;">Slug</th>
+            <th style="padding:0.75rem 1rem; text-align:center;">Items Logged</th>
+            <th style="padding:0.75rem 1rem; text-align:center;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cat in categories %}
+            <tr style="border-bottom:1px solid var(--border-color);">
+              <td style="padding:0.75rem 1rem;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                  <div style="width:2rem; height:2rem; border-radius:var(--radius-sm); background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:0.9rem;">
+                    <i class="fa-solid {{ cat.icon }}"></i>
+                  </div>
+                  <div>
+                    <div style="font-weight:700; color:var(--text-main);">{{ cat.name }}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">{{ cat.description|truncatechars:45|default:"General catalog category" }}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="padding:0.75rem 1rem; font-family:monospace; font-size:0.8rem; color:var(--text-muted);">
+                {{ cat.slug }}
+              </td>
+              <td style="padding:0.75rem 1rem; text-align:center; font-weight:700; color:#1e40af;">
+                {{ cat.items_count }}
+              </td>
+              <td style="padding:0.75rem 1rem; text-align:center;">
+                {% if cat.is_active %}
+                  <span class="badge badge-success">Active</span>
+                {% else %}
+                  <span class="badge badge-secondary">Disabled</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

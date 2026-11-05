@@ -1,0 +1,196 @@
+{% load static %}
+<!-- Floating AI Assistant Button & Popup Widget -->
+<style>
+  .cc-widget-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 9999;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cc-widget-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+  }
+  .cc-widget-popup {
+    position: fixed;
+    bottom: 92px;
+    right: 24px;
+    width: 360px;
+    height: 520px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9999;
+  }
+  .cc-widget-popup.active {
+    display: flex;
+  }
+  .cc-widget-head {
+    background: #1e3a8a;
+    color: #fff;
+    padding: 0.85rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cc-widget-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    font-size: 0.825rem;
+  }
+</style>
+
+<!-- Floating Trigger Button -->
+<button type="button" class="cc-widget-btn" id="ccWidgetTrigger" title="Ask CampusCare AI Assistant" onclick="toggleCampusWidget()">
+  <i class="fa-solid fa-headset"></i>
+</button>
+
+<!-- Compact Floating Chatbox -->
+<div class="cc-widget-popup" id="ccWidgetPopup">
+  <div class="cc-widget-head">
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <i class="fa-solid fa-robot"></i>
+      <span style="font-weight:700; font-size:0.9rem;">CampusCare Guide</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <a href="{% url 'assistant' %}" target="_blank" style="color:#93c5fd; font-size:0.8rem;" title="Expand Full Page">
+        <i class="fa-solid fa-up-right-from-square"></i>
+      </a>
+      <button type="button" style="background:none; border:none; color:#fff; cursor:pointer;" onclick="toggleCampusWidget()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="cc-widget-body" id="ccWidgetBody">
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; color:#1e293b;">
+      <strong>Hi! Need help finding or reporting an item?</strong>
+      <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
+        Ask me anything about lost property, found items, or claim verifications.
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Prompts in Widget -->
+  <div style="padding:4px 8px; background:#f1f5f9; border-top:1px solid #e2e8f0; display:flex; gap:4px; overflow-x:auto;">
+    <button type="button" class="btn btn-sm btn-outline" style="font-size:0.65rem; padding:2px 6px; white-space:nowrap;" onclick="quickWidgetPrompt('How do I report a lost item?')">
+      Report Lost
+    </button>
+    <button type="button" class="btn btn-sm btn-outline" style="font-size:0.65rem; padding:2px 6px; white-space:nowrap;" onclick="quickWidgetPrompt('I found an item on campus')">
+      Report Found
+    </button>
+    <button type="button" class="btn btn-sm btn-outline" style="font-size:0.65rem; padding:2px 6px; white-space:nowrap;" onclick="quickWidgetPrompt('How does claim approval work?')">
+      Claims
+    </button>
+  </div>
+
+  <!-- Input -->
+  <div style="padding:8px 10px; background:#fff; border-top:1px solid #e2e8f0;">
+    <form id="ccWidgetForm" onsubmit="handleWidgetSubmit(event)" style="display:flex; gap:6px;">
+      <input type="text" id="ccWidgetInput" class="form-input" placeholder="Type your question..." style="flex:1; height:2rem; font-size:0.8rem; padding:0 8px;" autocomplete="off" />
+      <button type="submit" class="btn btn-primary" style="height:2rem; width:2rem; padding:0; display:flex; align-items:center; justify-content:center;">
+        <i class="fa-solid fa-paper-plane" style="font-size:0.75rem;"></i>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleCampusWidget() {
+  const popup = document.getElementById('ccWidgetPopup');
+  popup.classList.toggle('active');
+  if (popup.classList.contains('active')) {
+    document.getElementById('ccWidgetInput').focus();
+  }
+}
+
+function quickWidgetPrompt(text) {
+  document.getElementById('ccWidgetInput').value = text;
+  handleWidgetSubmit(new Event('submit'));
+}
+
+async function handleWidgetSubmit(e) {
+  e.preventDefault();
+  const input = document.getElementById('ccWidgetInput');
+  const body = document.getElementById('ccWidgetBody');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  // Append user bubble
+  const userDiv = document.createElement('div');
+  userDiv.style.alignSelf = 'flex-end';
+  userDiv.style.background = '#2563eb';
+  userDiv.style.color = '#fff';
+  userDiv.style.borderRadius = '8px';
+  userDiv.style.padding = '6px 10px';
+  userDiv.style.maxWidth = '85%';
+  userDiv.innerText = msg;
+  body.appendChild(userDiv);
+  input.value = '';
+  body.scrollTop = body.scrollHeight;
+
+  // Typing
+  const typing = document.createElement('div');
+  typing.style.alignSelf = 'flex-start';
+  typing.style.color = '#64748b';
+  typing.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Typing...';
+  body.appendChild(typing);
+  body.scrollTop = body.scrollHeight;
+
+  try {
+    const csrfMatch = document.cookie.match(/csrftoken=([\w-]+)/);
+    const csrfToken = csrfMatch ? csrfMatch[1] : '';
+
+    const res = await fetch('/assistant/api/chat/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ message: msg })
+    });
+    const data = await res.json();
+    typing.remove();
+
+    const aiDiv = document.createElement('div');
+    aiDiv.style.alignSelf = 'flex-start';
+    aiDiv.style.background = '#fff';
+    aiDiv.style.border = '1px solid #e2e8f0';
+    aiDiv.style.borderRadius = '8px';
+    aiDiv.style.padding = '6px 10px';
+    aiDiv.style.maxWidth = '85%';
+    aiDiv.innerHTML = data.reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    body.appendChild(aiDiv);
+    body.scrollTop = body.scrollHeight;
+  } catch(err) {
+    typing.remove();
+    const errDiv = document.createElement('div');
+    errDiv.style.color = '#dc2626';
+    errDiv.innerText = 'Unable to reach assistant.';
+    body.appendChild(errDiv);
+  }
+}
+</script>
+

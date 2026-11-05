@@ -1,0 +1,827 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recovery History — CampusCare{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Recovery History Scoped Styles */
+.recovery-page-container {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Breadcrumb */
+.history-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
+}
+
+.history-breadcrumb a {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: color 0.15s ease;
+}
+
+.history-breadcrumb a:hover {
+  color: #2563eb;
+}
+
+.history-breadcrumb .separator {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.history-breadcrumb .active {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* Header Banner */
+.history-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.history-title-group h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  line-height: 1.25;
+}
+
+.history-subtitle {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin: 0.35rem 0 0 0;
+}
+
+.history-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Summary Cards (KPI Grid) */
+.recovery-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.recovery-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.35rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
+}
+
+.recovery-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.kpi-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  flex-shrink: 0;
+}
+
+.kpi-icon-box.green {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.kpi-icon-box.blue {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.kpi-icon-box.amber {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.kpi-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.kpi-label {
+  font-size: 0.775rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.kpi-subtext {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+/* Filters Card */
+.recovery-filters-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.filters-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+  gap: 0.85rem;
+  align-items: flex-end;
+}
+
+.filter-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.filter-field-group label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+}
+
+.filter-field-group input,
+.filter-field-group select {
+  height: 40px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+}
+
+.filter-field-group input:focus,
+.filter-field-group select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.filter-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-btn-group button,
+.filter-btn-group a {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* Records Card & Table */
+.recovery-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  margin-bottom: 2rem;
+}
+
+.recovery-table-header {
+  padding: 1.15rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background: #ffffff;
+}
+
+.table-header-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recovery-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.recovery-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+  min-width: 820px;
+}
+
+.recovery-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.recovery-table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  color: #334155;
+}
+
+.recovery-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Item Cell */
+.item-cell-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 200px;
+}
+
+.item-thumb-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.item-thumb-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-text-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.item-table-title {
+  font-weight: 700;
+  color: #0f172a;
+  text-decoration: none;
+  line-height: 1.3;
+}
+
+.item-table-title:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.item-table-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Reference Code Badge */
+.ref-code-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.775rem;
+  font-weight: 700;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Status Badges */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.status-pill.verified {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.status-pill.initiated {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.status-pill.failed {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.status-pill.cancelled {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+/* Action Buttons */
+.table-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+/* Empty State */
+.recovery-empty-state {
+  padding: 4.5rem 2rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.empty-icon-box {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem;
+  margin: 0 auto 1.25rem auto;
+}
+
+.recovery-empty-state h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+
+.recovery-empty-state p {
+  font-size: 0.925rem;
+  color: #64748b;
+  max-width: 440px;
+  margin: 0 auto 1.75rem auto;
+  line-height: 1.5;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1024px) {
+  .recovery-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .filters-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .filter-btn-group {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 640px) {
+  .recovery-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .filters-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .history-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .history-header-actions {
+    justify-content: flex-start;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recovery-page-container">
+  <!-- Breadcrumb -->
+  <nav class="history-breadcrumb">
+    <a href="{% url 'items:dashboard' %}">
+      <i class="fa-solid fa-house"></i> Dashboard
+    </a>
+    <i class="fa-solid fa-chevron-right separator"></i>
+    <span class="active">Recovery History</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="history-header-row">
+    <div class="history-title-group">
+      <h1>
+        <i class="fa-solid fa-clock-rotate-left" style="color: #2563eb;"></i> Recovery History
+      </h1>
+      <p class="history-subtitle">
+        Track items successfully returned to their rightful owners at Lovely Professional University (LPU), Phagwara, Punjab.
+      </p>
+    </div>
+
+    <div class="history-header-actions">
+      <!-- Real CSV Export Button -->
+      <a href="?export=csv{% if current_q %}&q={{ current_q|urlencode }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_date %}&date={{ current_date }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" class="btn btn-secondary btn-sm" title="Export records matching current filters to CSV">
+        <i class="fa-solid fa-file-export"></i> Export CSV
+      </a>
+      <a href="{% url 'items:dashboard' %}" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-arrow-left"></i> Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary KPI Cards -->
+  <div class="recovery-kpi-grid">
+    <!-- Card 1: Total Items Recovered -->
+    <div class="recovery-kpi-card">
+      <div class="kpi-icon-box green">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div class="kpi-info">
+        <div class="kpi-label">Total Items Recovered</div>
+        <div class="kpi-value">{{ total_recovered }}</div>
+        <div class="kpi-subtext">Verified returns &amp; recoveries</div>
+      </div>
+    </div>
+
+    <!-- Card 2: Total Handover Records -->
+    <div class="recovery-kpi-card">
+      <div class="kpi-icon-box blue">
+        <i class="fa-solid fa-handshake"></i>
+      </div>
+      <div class="kpi-info">
+        <div class="kpi-label">Total Handover Records</div>
+        <div class="kpi-value">{{ total_handovers }}</div>
+        <div class="kpi-subtext">Logged physical exchanges</div>
+      </div>
+    </div>
+
+    <!-- Card 3: Total Reward Points Earned -->
+    <div class="recovery-kpi-card">
+      <div class="kpi-icon-box amber">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <div class="kpi-info">
+        <div class="kpi-label">Total Reward Points Earned</div>
+        <div class="kpi-value">{{ total_reward_points }}</div>
+        <div class="kpi-subtext">From verified good deeds</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters & Search Form -->
+  <div class="recovery-filters-card">
+    <form method="get" action="{% url 'items:recovery_history' %}" class="filters-form-grid">
+      <!-- Search Input -->
+      <div class="filter-field-group">
+        <label for="id_q">Search</label>
+        <input type="text" id="id_q" name="q" value="{{ current_q }}" placeholder="Item name, code (e.g. CC-2026), location..." />
+      </div>
+
+      <!-- Category Filter -->
+      <div class="filter-field-group">
+        <label for="id_category">Category</label>
+        <select id="id_category" name="category">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if current_category == cat.id|stringformat:"s" %}selected{% endif %}>
+              {{ cat.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Recovery Date Filter -->
+      <div class="filter-field-group">
+        <label for="id_date">Recovery Date</label>
+        <select id="id_date" name="date">
+          <option value="" {% if not current_date %}selected{% endif %}>All Time</option>
+          <option value="today" {% if current_date == 'today' %}selected{% endif %}>Today</option>
+          <option value="week" {% if current_date == 'week' %}selected{% endif %}>Past 7 Days</option>
+          <option value="month" {% if current_date == 'month' %}selected{% endif %}>Past 30 Days</option>
+          <option value="year" {% if current_date == 'year' %}selected{% endif %}>This Year</option>
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="filter-field-group">
+        <label for="id_status">Status</label>
+        <select id="id_status" name="status">
+          <option value="" {% if not current_status %}selected{% endif %}>All Statuses</option>
+          <option value="verified" {% if current_status == 'verified' %}selected{% endif %}>Verified &amp; Recovered</option>
+          <option value="initiated" {% if current_status == 'initiated' %}selected{% endif %}>Handover Initiated</option>
+          <option value="failed" {% if current_status == 'failed' %}selected{% endif %}>Failed</option>
+          <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+      </div>
+
+      <!-- Sort By Filter -->
+      <div class="filter-field-group">
+        <label for="id_sort">Sort By</label>
+        <select id="id_sort" name="sort">
+          <option value="newest" {% if current_sort == 'newest' or not current_sort %}selected{% endif %}>Newest First</option>
+          <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+          <option value="title" {% if current_sort == 'title' %}selected{% endif %}>Item Name (A-Z)</option>
+        </select>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="filter-btn-group">
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-filter"></i> Filter
+        </button>
+        {% if current_q or current_category or current_status or current_date or current_sort != 'newest' %}
+          <a href="{% url 'items:recovery_history' %}" class="btn btn-secondary" title="Reset all filters">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Recovery Records Section -->
+  <div class="recovery-table-card">
+    <div class="recovery-table-header">
+      <div class="table-header-title">
+        <i class="fa-solid fa-list-check" style="color: #2563eb;"></i>
+        <span>Recovery Handover Records</span>
+      </div>
+      <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 600;">
+        {{ page_obj.paginator.count|default:0 }} Record{{ page_obj.paginator.count|pluralize }}
+      </span>
+    </div>
+
+    {% if page_obj.object_list %}
+      <div class="recovery-table-responsive">
+        <table class="recovery-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Reference Code</th>
+              <th>Category</th>
+              <th>Recovery Date</th>
+              <th>Campus Location</th>
+              <th>Status</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for handover in page_obj %}
+              <tr>
+                <!-- 1. Item Details & Image -->
+                <td>
+                  <div class="item-cell-wrapper">
+                    <div class="item-thumb-box">
+                      {% if handover.item.image %}
+                        <img src="{{ handover.item.image.url }}" alt="{{ handover.item.title }}" loading="lazy" />
+                      {% else %}
+                        <i class="fa-solid {{ handover.item.category.icon|default:'fa-box' }}"></i>
+                      {% endif %}
+                    </div>
+                    <div class="item-text-info">
+                      <a href="{% url 'items:item_detail' handover.item.pk %}" class="item-table-title">
+                        {{ handover.item.title }}
+                      </a>
+                      <div class="item-table-meta">
+                        <span class="badge badge-{{ handover.item.report_type }}" style="font-size: 0.675rem; padding: 2px 6px;">
+                          {{ handover.item.get_report_type_display }}
+                        </span>
+                        {% if handover.item.date_lost_or_found %}
+                          <span>&bull; Reported {{ handover.item.date_lost_or_found|date:"M d, Y" }}</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- 2. Unique Item Reference Code -->
+                <td>
+                  <span class="ref-code-badge">
+                    {{ handover.item.item_code|default:"CC-ITEM" }}
+                  </span>
+                </td>
+
+                <!-- 3. Category -->
+                <td>
+                  <span style="display: flex; align-items: center; gap: 0.4rem; color: #475569;">
+                    <i class="fa-solid {{ handover.item.category.icon|default:'fa-box' }}" style="color: #2563eb;"></i>
+                    {{ handover.item.category.name|default:"General Belonging" }}
+                  </span>
+                </td>
+
+                <!-- 4. Recovery Date -->
+                <td>
+                  <div style="font-size: 0.825rem; color: #0f172a; font-weight: 600;">
+                    {% if handover.verified_at %}
+                      {{ handover.verified_at|date:"M d, Y" }}
+                      <div style="font-size: 0.75rem; color: #64748b; font-weight: normal;">
+                        {{ handover.verified_at|date:"h:i A" }}
+                      </div>
+                    {% else %}
+                      {{ handover.initiated_at|date:"M d, Y" }}
+                      <div style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">
+                        Initiated
+                      </div>
+                    {% endif %}
+                  </div>
+                </td>
+
+                <!-- 5. Campus Location -->
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.35rem; color: #475569; font-size: 0.825rem;">
+                    <i class="fa-solid fa-location-dot" style="color: #ef4444; font-size: 0.85rem;"></i>
+                    <span>{{ handover.handover_location|default:handover.item.location.name|default:"Campus Helpdesk" }}</span>
+                  </div>
+                </td>
+
+                <!-- 6. Status -->
+                <td>
+                  {% if handover.status == 'verified' %}
+                    <span class="status-pill verified">
+                      <i class="fa-solid fa-circle-check"></i> Verified &amp; Recovered
+                    </span>
+                  {% elif handover.status == 'initiated' %}
+                    <span class="status-pill initiated">
+                      <i class="fa-solid fa-key"></i> Handover Initiated
+                    </span>
+                  {% elif handover.status == 'failed' %}
+                    <span class="status-pill failed">
+                      <i class="fa-solid fa-circle-xmark"></i> Verification Failed
+                    </span>
+                  {% else %}
+                    <span class="status-pill cancelled">
+                      <i class="fa-solid fa-ban"></i> {{ handover.get_status_display }}
+                    </span>
+                  {% endif %}
+
+                  {% if handover.reward_transactions.exists %}
+                    <div style="margin-top: 0.25rem;">
+                      <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.7rem; font-weight: 700;">
+                        <i class="fa-solid fa-award"></i> Reward Credited
+                      </span>
+                    </div>
+                  {% endif %}
+                </td>
+
+                <!-- 7. Action -->
+                <td>
+                  <div class="table-actions-cell">
+                    <!-- View Details Option -->
+                    <a href="{% url 'items:handover_detail' handover.pk %}" class="btn btn-secondary btn-sm" title="View Handover Details">
+                      <i class="fa-solid fa-eye"></i> View Details
+                    </a>
+
+                    <!-- Digital Receipt if finalized -->
+                    {% if handover.receipt %}
+                      <a href="{% url 'items:recovery_receipt' handover.receipt.pk %}" class="btn btn-primary btn-sm" title="View Official Digital Recovery Receipt">
+                        <i class="fa-solid fa-file-invoice"></i> Receipt
+                      </a>
+                    {% endif %}
+
+                    <!-- Lifecycle Timeline -->
+                    <a href="{% url 'items:recovery_timeline' handover.item.pk %}" class="btn btn-secondary btn-sm" title="Lifecycle Timeline">
+                      <i class="fa-solid fa-timeline"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      {% if page_obj.has_other_pages %}
+        <div style="padding: 1.25rem 1.5rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="font-size: 0.85rem; color: #64748b;">
+            Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} total records)
+          </div>
+          <div class="pagination" style="margin: 0;">
+            {% if page_obj.has_previous %}
+              <a href="?page={{ page_obj.previous_page_number }}{% if current_q %}&q={{ current_q|urlencode }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_date %}&date={{ current_date }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" class="page-link" title="Previous page">
+                <i class="fa-solid fa-chevron-left"></i>
+              </a>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% if current_q %}&q={{ current_q|urlencode }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_date %}&date={{ current_date }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" class="page-link">{{ num }}</a>
+              {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}{% if current_q %}&q={{ current_q|urlencode }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_date %}&date={{ current_date }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" class="page-link" title="Next page">
+                <i class="fa-solid fa-chevron-right"></i>
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <!-- Professional Empty State -->
+      <div class="recovery-empty-state">
+        <div class="empty-icon-box">
+          <i class="fa-solid fa-box-open"></i>
+        </div>
+        <h3>No Recovery History Yet</h3>
+        <p>
+          Items successfully returned to their rightful owners will appear here.
+        </p>
+        <a href="{% url 'items:found_items' %}" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-magnifying-glass"></i> Browse Found Items
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

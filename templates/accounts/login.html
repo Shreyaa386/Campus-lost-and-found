@@ -1,0 +1,123 @@
+{% extends 'auth_base.html' %}
+{% load static %}
+
+{% block title %}Sign In — CampusCare Lost &amp; Found{% endblock %}
+
+{% block content %}
+<div class="auth-split-wrapper">
+  <!-- Left Form Section (55% width) -->
+  <div class="auth-split-left">
+    <div class="auth-form-container">
+      <!-- Top Branding Row -->
+      <div class="auth-brand-row">
+        <a href="{% url 'login' %}" class="auth-brand-logo">
+          <div class="brand-icon">
+            <i class="fa-solid fa-compass"></i>
+          </div>
+          <span class="brand-name">CampusCare</span>
+          <span class="brand-tag">LPU Campus</span>
+        </a>
+      </div>
+
+      <!-- Welcome Back Header Block -->
+      <div class="auth-header-block">
+        <h1 class="auth-heading">Welcome Back</h1>
+        <p class="auth-subheading">
+          Welcome to CampusCare — Sign in with your campus student ID, username, or email to manage your reports and claims.
+        </p>
+      </div>
+
+      <!-- Django Messages & Non-field Errors -->
+      {% if messages %}
+        <div style="margin-bottom: 1.25rem;">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}" style="margin-bottom: 0.5rem;">
+              {% if message.tags == 'success' %}
+                <i class="fa-solid fa-circle-check"></i>
+              {% elif message.tags == 'error' or message.tags == 'danger' %}
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              {% else %}
+                <i class="fa-solid fa-circle-info"></i>
+              {% endif %}
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom: 1.25rem;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <div>{{ form.non_field_errors.0 }}</div>
+        </div>
+      {% endif %}
+
+      <!-- Login Form -->
+      <form method="post" action="{% url 'accounts:login' %}{% if next %}?next={{ next }}{% endif %}" class="auth-submit-form" novalidate>
+        {% csrf_token %}
+
+        <!-- Username, Campus Email, or Student ID -->
+        <div class="auth-field-group">
+          <label for="{{ form.username_or_email.id_for_label }}" class="auth-field-label">
+            <span><i class="fa-solid fa-id-card"></i> Username, Campus Email, or Student ID</span>
+          </label>
+          {{ form.username_or_email }}
+          {% if form.username_or_email.errors %}
+            <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.username_or_email.errors.0 }}</div>
+          {% endif %}
+          <div class="form-help">Enter your roll number (e.g. 2024CS01), institutional email, or username.</div>
+        </div>
+
+        <!-- Password with Show/Hide Toggle -->
+        <div class="auth-field-group">
+          <label for="{{ form.password.id_for_label }}" class="auth-field-label">
+            <span><i class="fa-solid fa-lock"></i> Password</span>
+            <span style="font-size:0.775rem; color:#64748b; font-weight:normal;">
+              <i class="fa-solid fa-shield-halved" style="color:#10b981;"></i> Secured
+            </span>
+          </label>
+          <div class="auth-password-wrapper">
+            {{ form.password }}
+            <button type="button" class="password-toggle-btn auth-password-toggle" data-target="{{ form.password.id_for_label }}" aria-label="Toggle password visibility" title="Show/Hide Password">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          {% if form.password.errors %}
+            <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.password.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Remember Me Option -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-main); cursor: pointer; margin-bottom: 0;">
+            {{ form.remember_me }}
+            <span>Remember me on this device</span>
+          </label>
+        </div>
+
+        <!-- Sign In Button -->
+        <button type="submit" class="btn-auth-submit auth-submit-btn" data-loading-text="Signing in...">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+        </button>
+      </form>
+
+      <!-- Switch to Signup Link -->
+      <div class="auth-switch-prompt">
+        Don't have a campus account yet?
+        <a href="{% url 'accounts:register' %}">Join CampusCare</a>
+      </div>
+
+      <!-- Campus Helpdesk Footnote -->
+      <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid #f1f5f9; text-align: center; font-size: 0.825rem; color: #94a3b8;">
+        <i class="fa-solid fa-circle-question" style="color: var(--primary);"></i>
+        Forgot credentials? Contact Student Affairs Desk at <a href="mailto:lostandfound@lpu.in" style="color: var(--primary);">lostandfound@lpu.in</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Illustrated Panel (45% width) -->
+  <div class="auth-split-right">
+    {% include 'accounts/_auth_illustration.html' %}
+  </div>
+</div>
+{% endblock %}

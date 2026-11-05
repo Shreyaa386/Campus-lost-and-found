@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review Claim #{{ claim.pk }} — CampusCare Staff{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+  <!-- Header -->
+  <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <a href="{% url 'items:admin_claims_list' %}" style="font-size: 0.875rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Claims Queue
+      </a>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+          Staff Verification Review
+        </span>
+        <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); margin: 0;">
+          Review Claim #{{ claim.pk }}
+        </h1>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.2rem;">
+        Target Item: <strong>{{ claim.item.title }}</strong> &bull; Current Status: <span class="badge badge-{{ claim.status }}">{{ claim.get_status_display }}</span>
+      </p>
+    </div>
+    <a href="{% url 'items:item_detail' claim.item.pk %}" class="btn btn-secondary">
+      <i class="fa-solid fa-box-open"></i> Inspect Item Listing
+    </a>
+  </div>
+
+  <!-- CONFLICT PREVENTION WARNING (if another claim already approved) -->
+  {% if already_approved_claim %}
+    <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 2rem;">
+      <div style="display: flex; gap: 1rem; align-items: flex-start;">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: #ef4444;"></i>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: #991b1b; margin-bottom: 0.35rem;">
+            Conflicting Final Approval Blocked
+          </h3>
+          <p style="font-size: 0.925rem; color: #7f1d1d; margin-bottom: 0.75rem; line-height: 1.5;">
+            Another claim (<strong><a href="{% url 'items:admin_claim_review' already_approved_claim.pk %}" style="color: #991b1b; text-decoration: underline;">Claim #{{ already_approved_claim.pk }} by {{ already_approved_claim.claimant.display_name }}</a></strong>) has already been APPROVED as the verified owner of this item. To prevent conflicting ownership decisions, you must revoke or reject the existing approved claim before you can approve this one.
+          </p>
+          <span class="badge" style="background: #ffffff; color: #ef4444; border: 1px solid #fca5a5;">
+            Single Verified Owner Policy Active
+          </span>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Explainable Fraud Risk Indicators Box -->
+  <div class="card" style="margin-bottom: 2rem; border-left: 4px solid {% if claim.fraud_risk_score >= 60 %}#ef4444{% elif claim.fraud_risk_score >= 30 %}#f59e0b{% else %}#10b981{% endif %};">
+    <div class="card-header" style="justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fa-solid fa-shield-virus" style="color: {% if claim.fraud_risk_score >= 60 %}#ef4444{% elif claim.fraud_risk_score >= 30 %}#f59e0b{% else %}#10b981{% endif %}; font-size: 1.1rem;"></i>
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">Explainable Risk Analysis</h3>
+      </div>
+      <span class="badge {% if claim.fraud_risk_score >= 60 %}badge-danger{% elif claim.fraud_risk_score >= 30 %}badge-warning{% else %}badge-open{% endif %}" style="font-size: 0.85rem;">
+        Risk Score: {{ claim.fraud_risk_score }}%
+      </span>
+    </div>
+    <div class="card-body" style="padding: 1.5rem;">
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Risk indicators are algorithmic caution flags to assist human review. They do <strong>not</strong> constitute proof of fraud and do not automatically ban users.
+      </p>
+
+      {% if claim.fraud_risk_flags %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          {% for flag in claim.fraud_risk_flags %}
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem 1rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+              <span class="badge {% if flag.severity == 'high' %}badge-danger{% elif flag.severity == 'medium' %}badge-warning{% else %}badge-open{% endif %}" style="font-size: 0.75rem; text-transform: uppercase;">
+                {{ flag.severity }}
+              </span>
+              <div>
+                <strong style="color: var(--text-main); font-size: 0.9rem;">{{ flag.title }}</strong>
+                <div style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.15rem;">
+                  {{ flag.description }}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="display: flex; align-items: center; gap: 0.5rem; color: #059669; font-size: 0.9rem; font-weight: 600;">
+          <i class="fa-solid fa-circle-check"></i> Standard profile: no unusual velocity, text mirroring, or frequent rejections detected.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Claimant Profile Summary -->
+    <div class="card">
+      <div class="card-header">
+        <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">
+          <i class="fa-solid fa-user-check" style="color: var(--primary); margin-right: 0.4rem;"></i>
+          Claimant Profile
+        </h3>
+      </div>
+      <div class="card-body" style="padding: 1.25rem 1.5rem;">
+        <div style="margin-bottom: 0.75rem;">
+          <div style="font-size: 0.775rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Full Name</div>
+          <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">{{ claim.claimant.display_name }}</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div>
+            <div style="font-size: 0.775rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Role</div>
+            <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">{{ claim.claimant.get_role_display }}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.775rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Student / Staff ID</div>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.9rem;">{{ claim.claimant.student_id|default:"N/A" }}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 0.75rem;">
+          <div style="font-size: 0.775rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Department</div>
+          <div style="font-size: 0.9rem; color: var(--text-main);">{{ claim.claimant.display_department }}</div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.775rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Campus Email</div>
+          <div style="font-size: 0.9rem; color: var(--text-main);">{{ claim.claimant.email }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Competing Claimants Side-by-Side Summary -->
+    <div class="card">
+      <div class="card-header">
+        <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">
+          <i class="fa-solid fa-users" style="color: #8b5cf6; margin-right: 0.4rem;"></i>
+          Competing Claims on this Item ({{ competing_claims|length }})
+        </h3>
+      </div>
+      <div class="card-body" style="padding: 1.25rem 1.5rem;">
+        {% if competing_claims %}
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            Other students have also lodged claims for this item:
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for comp in competing_claims %}
+              <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>{{ comp.claimant.display_name }}</strong>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">
+                    ID: {{ comp.claimant.student_id|default:"-" }} &bull; Claim #{{ comp.pk }}
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="badge badge-{{ comp.status }}" style="font-size: 0.75rem;">{{ comp.get_status_display }}</span>
+                  <a href="{% url 'items:admin_claim_review' comp.pk %}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                    Compare
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem 0; font-size: 0.9rem;">
+            <i class="fa-solid fa-user" style="font-size: 2rem; color: #cbd5e1; margin-bottom: 0.5rem;"></i>
+            <p style="margin: 0;">No other competing claims for this item.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Claimant's Private Proof & Answers Card -->
+  <div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+      <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">
+        <i class="fa-solid fa-fingerprint" style="color: var(--primary); margin-right: 0.4rem;"></i>
+        Claimant's Private Ownership Proof
+      </h3>
+    </div>
+    <div class="card-body" style="padding: 1.75rem;">
+      <!-- Dynamic Q&A -->
+      {% if claim.verification_answers %}
+        <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); margin-bottom: 0.75rem;">
+            Answers to Finder Questions:
+          </div>
+          {% for question, answer in claim.verification_answers.items %}
+            <div style="margin-bottom: 0.75rem;">
+              <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Q: {{ question }}</div>
+              <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-top: 0.15rem;">
+                A: {{ answer }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Identifying Details -->
+      <div style="margin-bottom: 1.5rem;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+          Claimant's Description of Hidden Marks / Contents
+        </div>
+        <div style="font-size: 0.95rem; color: #334155; line-height: 1.7; margin-top: 0.35rem; background: #ffffff; padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); white-space: pre-line;">
+          {{ claim.identifying_details }}
+        </div>
+      </div>
+
+      <!-- Proof Image -->
+      {% if claim.proof_image %}
+        <div>
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">
+            Uploaded Proof Document / Receipt / Previous Photo
+          </div>
+          <div style="max-width: 400px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-color);">
+            <img src="{{ claim.proof_image.url }}" alt="Proof Document" style="width:100%; height:auto;">
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Review Decision Form Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">
+        <i class="fa-solid fa-signature" style="color: var(--primary); margin-right: 0.4rem;"></i>
+        Record Review Decision
+      </h3>
+    </div>
+    <div class="card-body" style="padding: 2rem;">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <div>{{ form.non_field_errors.0 }}</div>
+          </div>
+        {% endif %}
+
+        <!-- Status Choice -->
+        <div class="form-group">
+          <label for="{{ form.status.id_for_label }}" class="form-label">
+            Decision Status <span style="color:#ef4444;">*</span>
+          </label>
+          {{ form.status }}
+          {% if form.status.errors %}
+            <div class="form-error">{{ form.status.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Decision Reason -->
+        <div class="form-group">
+          <label for="{{ form.decision_reason.id_for_label }}" class="form-label">
+            Decision Explanation (Sent to Claimant) <span style="color:#ef4444;">*</span>
+          </label>
+          {{ form.decision_reason }}
+          {% if form.decision_reason.errors %}
+            <div class="form-error">{{ form.decision_reason.errors.0 }}</div>
+          {% endif %}
+          <div class="form-help">
+            Explain clearly why ownership is confirmed or why evidence was insufficient.
+          </div>
+        </div>
+
+        <!-- Internal Admin Notes -->
+        <div class="form-group">
+          <label for="{{ form.admin_notes.id_for_label }}" class="form-label">
+            Internal Staff Audit Notes (Optional)
+          </label>
+          {{ form.admin_notes }}
+          {% if form.admin_notes.errors %}
+            <div class="form-error">{{ form.admin_notes.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Submit -->
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; align-items: center; margin-top: 2rem;">
+          <a href="{% url 'items:admin_claims_list' %}" class="btn btn-secondary">
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-floppy-disk"></i> Submit Decision
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

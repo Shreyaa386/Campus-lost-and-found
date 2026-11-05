@@ -1,0 +1,411 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lifecycle &amp; Recovery Timeline — {{ item.title }} — CampusCare{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Recovery Timeline Dedicated Styles */
+  .timeline-page-container {
+    max-width: 900px;
+    margin: 1.5rem auto 3.5rem auto;
+    padding: 0 1rem;
+  }
+
+  .timeline-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .timeline-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .timeline-back-link:hover {
+    color: #1d4ed8;
+    transform: translateX(-2px);
+  }
+
+  .timeline-title-row {
+    margin-top: 0.5rem;
+  }
+
+  .timeline-heading {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .timeline-subheading {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+  }
+
+  /* Item Summary Header Card */
+  .timeline-item-summary-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .summary-thumb-box {
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: #2563eb;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .summary-thumb-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .summary-details {
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .summary-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.35rem;
+  }
+
+  .summary-meta-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  .summary-code-tag {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.825rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+  }
+
+  /* Vertical Timeline Structure */
+  .timeline-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 2.25rem 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .timeline-tree {
+    position: relative;
+    padding-left: 3rem;
+    margin: 1rem 0;
+  }
+
+  .timeline-tree::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    bottom: 25px;
+    left: 19px;
+    width: 3px;
+    background: #e2e8f0;
+    border-radius: 2px;
+  }
+
+  .timeline-node {
+    position: relative;
+    margin-bottom: 2.25rem;
+  }
+
+  .timeline-node:last-child {
+    margin-bottom: 0;
+  }
+
+  .timeline-node-icon {
+    position: absolute;
+    left: -3rem;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #2563eb;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    box-shadow: 0 0 0 4px #ffffff, 0 2px 4px rgba(0, 0, 0, 0.08);
+    z-index: 2;
+    transition: all 0.2s ease;
+  }
+
+  .timeline-node-icon.completed {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+  }
+
+  .timeline-node-icon.success-node {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+  }
+
+  .timeline-node-icon.pending-node {
+    background: #f59e0b;
+    color: #ffffff;
+    border-color: #f59e0b;
+  }
+
+  .timeline-content-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .timeline-content-card:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  }
+
+  .timeline-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+  }
+
+  .timeline-stage-tag {
+    font-size: 0.725rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #2563eb;
+    display: inline-block;
+    margin-bottom: 0.2rem;
+  }
+
+  .timeline-event-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .timeline-timestamp-box {
+    text-align: right;
+    font-size: 0.775rem;
+    color: #64748b;
+    white-space: nowrap;
+  }
+
+  .timeline-timestamp-date {
+    font-weight: 700;
+    color: #334155;
+    display: block;
+  }
+
+  .timeline-event-desc {
+    font-size: 0.875rem;
+    color: #475569;
+    line-height: 1.55;
+    margin: 0.35rem 0 0 0;
+  }
+
+  .timeline-receipt-badge {
+    margin-top: 0.85rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .timeline-receipt-link {
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: #10b981;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .timeline-receipt-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    .timeline-tree {
+      padding-left: 2.5rem;
+    }
+
+    .timeline-tree::before {
+      left: 15px;
+    }
+
+    .timeline-node-icon {
+      left: -2.5rem;
+      width: 32px;
+      height: 32px;
+      font-size: 0.8rem;
+    }
+
+    .timeline-content-card {
+      padding: 1rem;
+    }
+
+    .timeline-card-header {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .timeline-timestamp-box {
+      text-align: left;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="timeline-page-container">
+  <!-- Top Navigation & Actions -->
+  <div class="timeline-nav-header">
+    <div>
+      <a href="{% url 'items:item_detail' item.pk %}" class="timeline-back-link">
+        <i class="fa-solid fa-arrow-left"></i> Back to {{ item.title|truncatechars:28 }}
+      </a>
+      <div class="timeline-title-row">
+        <h1 class="timeline-heading">Lifecycle &amp; Recovery Timeline</h1>
+        <p class="timeline-subheading">
+          Verified audit trail of reporting, ownership verification, and physical handover events.
+        </p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+      <a href="{% url 'items:item_tag' item.pk %}" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-tag"></i> Item Tag
+      </a>
+      <a href="{% url 'items:item_conversation' item.pk %}" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-comments"></i> Coordination Chat
+      </a>
+    </div>
+  </div>
+
+  <!-- Item Summary Card -->
+  <div class="timeline-item-summary-card">
+    <div class="summary-thumb-box">
+      {% if item.image %}
+      <img src="{{ item.image.url }}" alt="{{ item.title }}" />
+      {% else %}
+      <i class="fa-solid {{ item.category.icon|default:'fa-box' }}"></i>
+      {% endif %}
+    </div>
+
+    <div class="summary-details">
+      <h2 class="summary-title">{{ item.title }}</h2>
+      <div class="summary-meta-badges">
+        <span class="summary-code-tag">{{ item.item_code|default:"CC-ITEM" }}</span>
+        <span class="badge badge-{{ item.report_type }}">{{ item.get_report_type_display }}</span>
+        <span class="badge badge-{{ item.status }}">{{ item.get_status_display }}</span>
+        <span><i class="fa-solid fa-tag"></i> {{ item.category.name }}</span>
+        <span>•</span>
+        <span><i class="fa-solid fa-location-dot"></i> {{ item.location.name|default:"Campus Premises" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real Database Timeline Events -->
+  <div class="timeline-card">
+    <div class="timeline-tree">
+      {% for ev in timeline_events %}
+      <div class="timeline-node">
+        <!-- Status Icon Node -->
+        <div class="timeline-node-icon 
+            {% if ev.stage == 'Item Recovered' %}success-node
+            {% elif ev.stage == 'Claim Under Review' %}pending-node
+            {% elif ev.completed %}completed{% endif %}">
+          <i class="fa-solid {{ ev.icon }}"></i>
+        </div>
+
+        <!-- Event Card -->
+        <div class="timeline-content-card">
+          <div class="timeline-card-header">
+            <div>
+              <span class="timeline-stage-tag">{{ ev.stage }}</span>
+              <h3 class="timeline-event-title">{{ ev.title }}</h3>
+            </div>
+            <div class="timeline-timestamp-box">
+              <span class="timeline-timestamp-date">{{ ev.timestamp|date:"M d, Y" }}</span>
+              <span>{{ ev.timestamp|date:"h:i A" }}</span>
+            </div>
+          </div>
+
+          <p class="timeline-event-desc">{{ ev.description }}</p>
+
+          {% if ev.receipt %}
+          <div class="timeline-receipt-badge">
+            <a href="{% url 'items:recovery_receipt' ev.receipt.pk %}" class="timeline-receipt-link">
+              <i class="fa-solid fa-file-shield"></i> View Cryptographic Recovery Receipt ({{ ev.receipt.receipt_number
+              }})
+            </a>
+            <span class="badge" style="background:#dcfce7; color:#15803d; font-size:0.75rem;">
+              <i class="fa-solid fa-shield-check"></i> Verified Recovery
+            </span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+        <i class="fa-solid fa-hourglass-start fa-2x" style="margin-bottom: 0.75rem;"></i>
+        <p style="font-size: 0.95rem; margin: 0;">No lifecycle events recorded for this item yet.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,717 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard — CampusCare Lost &amp; Found{% endblock %}
+
+{% block content %}
+
+<!-- 3. PERSONALIZED WELCOME BANNER -->
+<div class="dashboard-welcome-banner">
+        <div class="welcome-text-col">
+          <h1 class="welcome-heading">
+            Welcome back, {{ user.get_full_name|default:user.display_name }}! 👋
+          </h1>
+          <p class="welcome-subheading">
+            Here's what is happening with lost and found items across 
+            <strong>{{ user.institution.name|default:"Lovely Professional University (LPU), Phagwara, Punjab" }}</strong> today.
+          </p>
+        </div>
+        <div class="welcome-actions-col">
+          <a href="{% url 'items:dashboard' %}?export=csv" class="btn btn-export" title="Export reports to CSV spreadsheet">
+            <i class="fa-solid fa-file-arrow-down"></i> Export CSV
+          </a>
+          <a href="{% url 'items:report_item' 'lost' %}" class="btn btn-report-primary">
+            <i class="fa-solid fa-plus"></i> Report an Item
+          </a>
+        </div>
+      </div>
+
+      <!-- 4. SIX KPI STATISTIC CARDS -->
+      <div class="kpi-grid-6">
+        <!-- 1. Total Lost Items -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Total Lost Items</span>
+            <div class="kpi-icon-box kpi-lost">
+              <i class="fa-solid fa-magnifying-glass-location"></i>
+            </div>
+          </div>
+          <div class="kpi-value">{{ stats.total_lost }}</div>
+          <div class="kpi-footer">
+            <span class="kpi-tag kpi-tag-lost"><i class="fa-solid fa-arrow-trend-up"></i> Reports</span>
+            <span class="kpi-context">Campus-wide lost</span>
+          </div>
+        </div>
+
+        <!-- 2. Total Found Items -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Total Found Items</span>
+            <div class="kpi-icon-box kpi-found">
+              <i class="fa-solid fa-box-open"></i>
+            </div>
+          </div>
+          <div class="kpi-value">{{ stats.total_found }}</div>
+          <div class="kpi-footer">
+            <span class="kpi-tag kpi-tag-found"><i class="fa-solid fa-hand-holding-heart"></i> In custody</span>
+            <span class="kpi-context">Campus-wide found</span>
+          </div>
+        </div>
+
+        <!-- 3. Active Reports -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Active Reports</span>
+            <div class="kpi-icon-box kpi-active">
+              <i class="fa-solid fa-clipboard-list"></i>
+            </div>
+          </div>
+          <div class="kpi-value">{{ stats.active_reports }}</div>
+          <div class="kpi-footer">
+            <span class="kpi-tag kpi-tag-active"><i class="fa-solid fa-circle-dot"></i> Live</span>
+            <span class="kpi-context">Pending resolution</span>
+          </div>
+        </div>
+
+        <!-- 4. Items Recovered -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Items Recovered</span>
+            <div class="kpi-icon-box kpi-recovered">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+          </div>
+          <div class="kpi-value">{{ stats.recovered_items }}</div>
+          <div class="kpi-footer">
+            <span class="kpi-tag kpi-tag-recovered"><i class="fa-solid fa-shield-check"></i> Verified</span>
+            <span class="kpi-context">Safe handovers</span>
+          </div>
+        </div>
+
+        <!-- 5. Pending Claims -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Pending Claims</span>
+            <div class="kpi-icon-box kpi-pending">
+              <i class="fa-solid fa-file-signature"></i>
+            </div>
+          </div>
+          <div class="kpi-value">{{ stats.pending_claims }}</div>
+          <div class="kpi-footer">
+            <span class="kpi-tag kpi-tag-pending"><i class="fa-solid fa-hourglass-half"></i> In review</span>
+            <span class="kpi-context">Ownership proof</span>
+          </div>
+        </div>
+
+        <!-- 6. Reward Points -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Reward Points</span>
+            <div class="kpi-icon-box kpi-rewards">
+              <i class="fa-solid fa-award"></i>
+            </div>
+          </div>
+          <div class="kpi-value">{{ stats.reward_points }}</div>
+          <div class="kpi-footer">
+            <span class="kpi-tag kpi-tag-rewards"><i class="fa-solid fa-coins"></i> Points</span>
+            <span class="kpi-context">Good citizenship</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. ANALYTICS CHARTS ROW (Recovery Activity Line Chart + Report Status Doughnut Chart) -->
+      <div class="analytics-charts-grid">
+        <!-- Recovery Activity Line Chart (~65%) -->
+        <div class="chart-card chart-line-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-title">Recovery Activity</h3>
+              <p class="chart-subtitle">Monthly comparison of reported items vs successfully recovered belongings</p>
+            </div>
+            <div class="chart-legend-pills">
+              <span class="legend-pill"><span class="legend-dot dot-reported"></span> Reported</span>
+              <span class="legend-pill"><span class="legend-dot dot-recovered"></span> Recovered</span>
+            </div>
+          </div>
+          <div class="chart-card-body">
+            <div class="chart-canvas-wrapper" style="position: relative; height: 260px; width: 100%;">
+              <canvas id="recoveryActivityChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Status Doughnut Chart (~35%) -->
+        <div class="chart-card chart-doughnut-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-title">Report Status</h3>
+              <p class="chart-subtitle">Overall status distribution across your campus</p>
+            </div>
+          </div>
+          <div class="chart-card-body">
+            <div class="doughnut-canvas-wrapper" style="position: relative; height: 180px; width: 100%;">
+              <canvas id="reportStatusChart"></canvas>
+            </div>
+            <div class="doughnut-legend-list">
+              <div class="doughnut-legend-item">
+                <span class="d-dot" style="background:#2563eb;"></span>
+                <span class="d-label">Open</span>
+                <span class="d-val">{{ status_breakdown.open }}</span>
+              </div>
+              <div class="doughnut-legend-item">
+                <span class="d-dot" style="background:#f59e0b;"></span>
+                <span class="d-label">Under Claim</span>
+                <span class="d-val">{{ status_breakdown.under_claim }}</span>
+              </div>
+              <div class="doughnut-legend-item">
+                <span class="d-dot" style="background:#10b981;"></span>
+                <span class="d-label">Recovered</span>
+                <span class="d-val">{{ status_breakdown.recovered }}</span>
+              </div>
+              <div class="doughnut-legend-item">
+                <span class="d-dot" style="background:#94a3b8;"></span>
+                <span class="d-label">Expired</span>
+                <span class="d-val">{{ status_breakdown.expired }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 & 7. TWO-COLUMN ACTIVITY ROW: Recent Campus Reports Table + Recent Notifications Panel -->
+      <div class="activity-grid-row">
+        <!-- 6. Recent Campus Reports Table (~65%) -->
+        <div class="activity-card reports-table-card">
+          <div class="activity-card-header">
+            <div>
+              <h3 class="activity-title">Recent Campus Reports</h3>
+              <p class="activity-subtitle">Latest items logged across your campus institution</p>
+            </div>
+            <div class="activity-header-actions">
+              <a href="{% url 'items:lost_items' %}" class="btn-outline-sm">
+                View Directory &rarr;
+              </a>
+            </div>
+          </div>
+          <div class="activity-card-body p-0">
+            <div style="overflow-x: auto;">
+              <table class="campus-reports-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th>Reported Date</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in recent_campus_items %}
+                    <tr>
+                      <td class="col-item">
+                        <div class="item-cell-wrapper">
+                          <div class="item-icon-box">
+                            {% if item.image %}
+                              <img src="{{ item.image.url }}" alt="{{ item.title }}" class="item-thumb-img">
+                            {% else %}
+                              <i class="fa-solid {{ item.category.icon|default:'fa-box' }}"></i>
+                            {% endif %}
+                          </div>
+                          <div class="item-details">
+                            <a href="{% url 'items:item_detail' item.pk %}" class="item-title-link">
+                              {{ item.title|truncatechars:26 }}
+                            </a>
+                            <span class="item-category-label">{{ item.category.name|default:"General" }}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="col-type">
+                        {% if item.report_type == 'lost' %}
+                          <span class="badge badge-lost"><i class="fa-solid fa-circle-exclamation"></i> Lost</span>
+                        {% else %}
+                          <span class="badge badge-found"><i class="fa-solid fa-hand-holding-heart"></i> Found</span>
+                        {% endif %}
+                      </td>
+                      <td class="col-location">
+                        <span class="location-text">
+                          <i class="fa-solid fa-location-dot" style="color: #94a3b8;"></i>
+                          {{ item.location.name|default:"Campus"|truncatechars:20 }}
+                        </span>
+                      </td>
+                      <td class="col-date">
+                        <span class="date-text">{{ item.created_at|date:"M d, Y" }}</span>
+                        <small class="time-text">{{ item.created_at|timesince }} ago</small>
+                      </td>
+                      <td class="col-status">
+                        <span class="status-pill status-{{ item.status }}">{{ item.get_status_display }}</span>
+                      </td>
+                      <td class="col-action" style="text-align: right;">
+                        <a href="{% url 'items:item_detail' item.pk %}" class="btn-table-action" title="View report details">
+                          View
+                        </a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="6" class="table-empty-cell">
+                        <div class="empty-state-box">
+                          <i class="fa-solid fa-inbox"></i>
+                          <p>No recent reports logged in your campus institution yet.</p>
+                          <a href="{% url 'items:report_item' 'lost' %}" class="btn btn-sm btn-primary" style="margin-top: 0.5rem;">Report an Item</a>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Recent Notifications Panel (~35%) -->
+        <div class="activity-card notifications-card">
+          <div class="activity-card-header">
+            <div>
+              <h3 class="activity-title">Recent Notifications</h3>
+              <p class="activity-subtitle">Stay updated on your claims &amp; handovers</p>
+            </div>
+            <a href="{% url 'items:notifications' %}" class="btn-outline-sm">All &rarr;</a>
+          </div>
+          <div class="activity-card-body p-0">
+            {% if recent_notifications %}
+              <div class="notifications-list">
+                {% for notif in recent_notifications %}
+                  <div class="notification-item {% if not notif.is_read %}unread{% endif %}">
+                    <div class="notif-icon-col">
+                      {% if notif.notification_type == 'match_found' %}
+                        <div class="notif-icon-box notif-match"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                      {% elif 'claim' in notif.notification_type %}
+                        <div class="notif-icon-box notif-claim"><i class="fa-solid fa-file-signature"></i></div>
+                      {% elif 'handover' in notif.notification_type or 'recovered' in notif.notification_type %}
+                        <div class="notif-icon-box notif-recovery"><i class="fa-solid fa-circle-check"></i></div>
+                      {% else %}
+                        <div class="notif-icon-box notif-default"><i class="fa-solid fa-bell"></i></div>
+                      {% endif %}
+                    </div>
+                    <div class="notif-content-col">
+                      <div class="notif-title-row">
+                        <h4 class="notif-title">{{ notif.title }}</h4>
+                        {% if not notif.is_read %}
+                          <span class="unread-dot" title="Unread notification"></span>
+                        {% endif %}
+                      </div>
+                      <p class="notif-snippet">{{ notif.message|truncatechars:85 }}</p>
+                      <span class="notif-timestamp">{{ notif.created_at|timesince }} ago</span>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="empty-notifications-box">
+                <i class="fa-solid fa-bell-slash"></i>
+                <p>No new notifications at this time.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- SMART SUGGESTED MATCHES SECTION (When High-Confidence Matches Exist) -->
+      {% if suggested_matches %}
+      <div class="card" style="margin-bottom: 2rem; border-color: #bfdbfe; background: #fbfdff;">
+        <div class="card-header" style="background: #eff6ff; border-bottom: 1px solid #dbeafe;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary); font-size: 1.1rem;"></i>
+            <div style="font-weight: 800; color: var(--text-main); font-size: 1.05rem;">
+              Suggested Smart Matches for Your Reports
+            </div>
+          </div>
+          <span class="badge" style="background: #dbeafe; color: #1e40af; font-weight:700;">
+            {{ suggested_matches|length }} High-Confidence Match{{ suggested_matches|length|pluralize:"es" }}
+          </span>
+        </div>
+
+        <div class="card-body">
+          <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Our explainable matching engine analyzed category, keywords, date proximity, and location to find these possible matches.
+          </p>
+
+          <div class="suggested-matches-grid">
+            {% for match in suggested_matches %}
+              <div class="match-card-mini">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); text-transform:uppercase; font-weight:700;">
+                    Matching: {{ match.source_item.title|truncatechars:18 }}
+                  </div>
+                  <div class="match-score-badge">
+                    <i class="fa-solid fa-bolt"></i> {{ match.score|floatformat:0 }}% Match
+                  </div>
+                </div>
+
+                <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">
+                  <a href="{% url 'items:item_detail' match.matched_item.pk %}" style="color:var(--text-main);">
+                    {{ match.matched_item.title }}
+                  </a>
+                </div>
+
+                <div style="font-size: 0.825rem; color: var(--text-muted);">
+                  <i class="fa-solid fa-tag"></i> {{ match.matched_item.category.name }} &bull;
+                  <i class="fa-solid fa-location-dot"></i> {{ match.matched_item.location.name|default:"Campus" }}
+                </div>
+
+                {% if match.reasons %}
+                  <div style="font-size: 0.775rem; color: #047857; background: #ecfdf5; padding: 0.35rem 0.5rem; border-radius: var(--radius-sm);">
+                    <i class="fa-solid fa-circle-check"></i> {{ match.reasons.0|truncatechars:60 }}
+                  </div>
+                {% endif %}
+
+                <div style="display:flex; gap:0.5rem; margin-top: auto; padding-top: 0.5rem;">
+                  <a href="{% url 'items:item_matches' match.source_item.pk %}" class="btn btn-secondary btn-sm" style="flex:1; justify-content:center; font-size:0.8rem;">
+                    Review Match
+                  </a>
+                  {% if match.matched_item.report_type == 'found' %}
+                    <a href="{% url 'items:item_claim' match.matched_item.pk %}" class="btn btn-primary btn-sm" style="flex:1; justify-content:center; font-size:0.8rem;">
+                      Claim Item
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      <!-- End of Dashboard Content -->
+{% endblock %}
+{% comment %}
+            All Reports ({{ stats.total }})
+          </a>
+          <a href="{% url 'items:dashboard' %}?tab=lost" class="btn btn-sm {% if current_tab == 'lost' %}btn-primary{% else %}btn-secondary{% endif %}" style="border:none;">
+            Lost ({{ stats.lost }})
+          </a>
+          <a href="{% url 'items:dashboard' %}?tab=found" class="btn btn-sm {% if current_tab == 'found' %}btn-primary{% else %}btn-secondary{% endif %}" style="border:none;">
+            Found ({{ stats.found }})
+          </a>
+          <a href="{% url 'items:dashboard' %}?tab=open" class="btn btn-sm {% if current_tab == 'open' %}btn-primary{% else %}btn-secondary{% endif %}" style="border:none;">
+            Active Open ({{ stats.open }})
+          </a>
+          <a href="{% url 'items:dashboard' %}?tab=resolved" class="btn btn-sm {% if current_tab == 'resolved' %}btn-primary{% else %}btn-secondary{% endif %}" style="border:none;">
+            Resolved ({{ stats.resolved }})
+          </a>
+          <a href="{% url 'items:dashboard' %}?tab=claims" class="btn btn-sm {% if current_tab == 'claims' %}btn-primary{% else %}btn-secondary{% endif %}" style="border:none;">
+            My Claims ({{ stats.claims_count }})
+          </a>
+        </div>
+
+        <div class="card-body" style="padding: 0;">
+          {% if current_tab == 'claims' %}
+            <!-- My Claims Table -->
+            {% if user_claims %}
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                  <thead>
+                    <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.775rem; text-transform: uppercase;">
+                      <th style="padding: 1rem 1.25rem;">Claim ID</th>
+                      <th style="padding: 1rem 1rem;">Target Belonging</th>
+                      <th style="padding: 1rem 1rem;">Category</th>
+                      <th style="padding: 1rem 1rem;">Verification Status</th>
+                      <th style="padding: 1rem 1rem;">Lodged On</th>
+                      <th style="padding: 1rem 1.25rem; text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for claim in user_claims %}
+                      <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 1rem 1.25rem; font-weight: 700; color: var(--text-muted);">
+                          #{{ claim.pk }}
+                        </td>
+                        <td style="padding: 1rem 1rem;">
+                          <a href="{% url 'items:claim_detail' claim.pk %}" style="font-weight: 700; color: var(--text-main);">
+                            {{ claim.item.title }}
+                          </a>
+                        </td>
+                        <td style="padding: 1rem 1rem; color: var(--text-muted);">
+                          {{ claim.item.category.name }}
+                        </td>
+                        <td style="padding: 1rem 1rem;">
+                          <span class="badge badge-{{ claim.status }}">{{ claim.get_status_display }}</span>
+                        </td>
+                        <td style="padding: 1rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                          {{ claim.created_at|date:"M d, Y" }}
+                        </td>
+                        <td style="padding: 1rem 1.25rem; text-align: right;">
+                          <a href="{% url 'items:claim_detail' claim.pk %}" class="btn btn-secondary btn-sm">
+                            Details <i class="fa-solid fa-arrow-right"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div style="padding: 3.5rem 2rem; text-align: center; color: var(--text-muted);">
+                <i class="fa-solid fa-file-signature" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 0.75rem; display:block;"></i>
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No Ownership Claims Lodged</h3>
+                <p style="font-size: 0.9rem; max-width:450px; margin:0 auto 1.25rem;">
+                  When you see a reported found item that belongs to you, submit a confidential ownership verification claim to reclaim it.
+                </p>
+                <a href="{% url 'items:found_items' %}" class="btn btn-primary btn-sm">
+                  Browse Found Items Directory
+                </a>
+              </div>
+            {% endif %}
+
+          {% elif page_obj %}
+            <!-- My Reports Table -->
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.925rem;">
+                <thead>
+                  <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 1rem 1.25rem;">Item</th>
+                    <th style="padding: 1rem 1rem;">Type</th>
+                    <th style="padding: 1rem 1rem;">Category</th>
+                    <th style="padding: 1rem 1rem;">Location</th>
+                    <th style="padding: 1rem 1rem;">Status</th>
+                    <th style="padding: 1rem 1rem;">Date</th>
+                    <th style="padding: 1rem 1.25rem; text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in page_obj %}
+                    <tr style="border-bottom: 1px solid var(--border-color); transition: background-color 0.15s ease;">
+                      <td style="padding: 1rem 1.25rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                          <div style="width: 2.75rem; height: 2.75rem; border-radius: var(--radius-sm); background: #f1f5f9; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                            {% if item.image %}
+                              <img src="{{ item.image.url }}" alt="{{ item.title }}" style="width:100%; height:100%; object-fit:cover;">
+                            {% else %}
+                              <i class="fa-solid {{ item.category.icon|default:'fa-box' }}" style="color: #94a3b8;"></i>
+                            {% endif %}
+                          </div>
+                          <div>
+                            <a href="{% url 'items:item_detail' item.pk %}" style="font-weight: 700; color: var(--text-main);">
+                              {{ item.title }}
+                            </a>
+                            <div style="font-size: 0.775rem; color: var(--text-muted);">
+                              Reported {{ item.created_at|date:"M d, Y" }}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td style="padding: 1rem 1rem;">
+                        {% if item.report_type == 'lost' %}
+                          <span class="badge badge-lost">Lost</span>
+                        {% else %}
+                          <span class="badge badge-found">Found</span>
+                        {% endif %}
+                      </td>
+
+                      <td style="padding: 1rem 1rem; color: var(--text-muted);">
+                        {{ item.category.name }}
+                      </td>
+
+                      <td style="padding: 1rem 1rem; color: var(--text-muted);">
+                        {{ item.location.name|default:"General" }}
+                      </td>
+
+                      <td style="padding: 1rem 1rem;">
+                        <span class="badge badge-{{ item.status }}">{{ item.get_status_display }}</span>
+                      </td>
+
+                      <td style="padding: 1rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                        {{ item.date_lost_or_found|date:"M d, Y" }}
+                      </td>
+
+                      <td style="padding: 1rem 1.25rem; text-align: right;">
+                        <div style="display: inline-flex; gap: 0.35rem;">
+                          <a href="{% url 'items:item_matches' item.pk %}" class="btn btn-secondary btn-sm" title="Suggested Matches">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primary);"></i>
+                          </a>
+                          <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-secondary btn-sm" title="View Details">
+                            <i class="fa-solid fa-eye"></i>
+                          </a>
+                          <a href="{% url 'items:item_edit' item.pk %}" class="btn btn-secondary btn-sm" title="Edit Report">
+                            <i class="fa-solid fa-pen"></i>
+                          </a>
+                          <a href="{% url 'items:item_delete' item.pk %}" class="btn btn-secondary btn-sm" style="color:#ef4444;" title="Delete Report">
+                            <i class="fa-solid fa-trash"></i>
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            {% if page_obj.has_other_pages %}
+              <div style="padding: 1.25rem;">
+                <div class="pagination" style="margin-top:0;">
+                  {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&tab={{ current_tab }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </a>
+                  {% endif %}
+
+                  {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                      <span class="page-link active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                      <a href="?page={{ num }}&tab={{ current_tab }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">{{ num }}</a>
+                    {% endif %}
+                  {% endfor %}
+
+                  {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&tab={{ current_tab }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div style="padding: 4rem 2rem; text-align: center;">
+              <i class="fa-solid fa-clipboard-check" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem; display:block;"></i>
+              <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.35rem;">
+                No Reports Found
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                {% if search_query %}
+                  No items matching "{{ search_query }}" under this filter tab.
+                {% else %}
+                  You haven't logged any items under this filter tab yet.
+                {% endif %}
+              </p>
+              <div style="display:flex; justify-content:center; gap:0.75rem;">
+                <a href="{% url 'items:report_item' 'lost' %}" class="btn btn-lost btn-sm">
+                  <i class="fa-solid fa-circle-exclamation"></i> Report Lost Item
+                </a>
+                <a href="{% url 'items:report_item' 'found' %}" class="btn btn-found btn-sm">
+                  <i class="fa-solid fa-hand-holding-heart"></i> Report Found Item
+                </a>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+{% endcomment %}
+
+{% block extra_js %}
+<!-- Chart.js 4.4 CDN for Recovery Activity and Status Doughnut Charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Chart 1: Recovery Activity Line Chart
+  const lineCtx = document.getElementById('recoveryActivityChart');
+  if (lineCtx && typeof Chart !== 'undefined') {
+    const rawLabels = JSON.parse('{{ chart_labels|safe }}');
+    const rawReported = JSON.parse('{{ chart_reported|safe }}');
+    const rawRecovered = JSON.parse('{{ chart_recovered|safe }}');
+
+    new Chart(lineCtx, {
+      type: 'line',
+      data: {
+        labels: rawLabels,
+        datasets: [
+          {
+            label: 'Reported Items',
+            data: rawReported,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#2563eb',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          },
+          {
+            label: 'Recovered Items',
+            data: rawRecovered,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#10b981',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            titleFont: { size: 13, weight: '700' },
+            bodyFont: { size: 12 },
+            padding: 10,
+            cornerRadius: 8,
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#64748b', font: { size: 12 } }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              color: '#64748b',
+              font: { size: 12 },
+              precision: 0
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Chart 2: Report Status Doughnut Chart
+  const doughnutCtx = document.getElementById('reportStatusChart');
+  if (doughnutCtx && typeof Chart !== 'undefined') {
+    const statusData = JSON.parse('{{ chart_status_data|safe }}');
+    // If all zeros, show placeholder distribution
+    const sum = statusData.reduce((a, b) => a + b, 0);
+    const displayData = sum > 0 ? statusData : [1, 1, 1, 1];
+
+    new Chart(doughnutCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Open', 'Under Claim', 'Recovered', 'Expired / Closed'],
+        datasets: [{
+          data: displayData,
+          backgroundColor: ['#2563eb', '#f59e0b', '#10b981', '#94a3b8'],
+          borderWidth: 3,
+          borderColor: '#ffffff',
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            padding: 10,
+            cornerRadius: 8,
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

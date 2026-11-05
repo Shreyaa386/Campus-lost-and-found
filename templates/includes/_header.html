@@ -1,0 +1,110 @@
+{% load static %}
+<!-- TOP HEADER INSIDE MAIN WORKSPACE -->
+<header class="dashboard-top-header navbar" id="dashboardHeader">
+  <div class="header-left">
+    <!-- Mobile Sidebar Toggle -->
+    <button class="mobile-sidebar-toggle d-lg-none" id="sidebarToggleBtn" aria-label="Toggle navigation">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <!-- Global Search Bar -->
+    <form method="get" action="{% url 'items:dashboard' %}" class="header-search-form">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search reports, categories, locations..." class="header-search-input">
+      {% if request.GET.q %}
+        <a href="{% url 'items:dashboard' %}" class="search-clear-btn" title="Clear search">
+          <i class="fa-solid fa-xmark"></i>
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="header-right">
+    <!-- Campus Selector Dropdown -->
+    <div class="campus-selector-wrapper">
+      <div class="campus-selector-btn" id="campusSelectorBtn">
+        <i class="fa-solid fa-building-columns" style="color: var(--primary);"></i>
+        <span class="campus-selector-text">{{ current_institution.name|default:user.institution.name|default:"Lovely Professional University (LPU), Phagwara, Punjab" }}</span>
+        <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem; color: #94a3b8;"></i>
+      </div>
+      <div class="campus-selector-dropdown" id="campusSelectorDropdown">
+        <div class="dropdown-header-label">Active Campus</div>
+        <div class="campus-option active">
+          <i class="fa-solid fa-circle-check"></i>
+          <div>
+            <strong>{{ current_institution.name|default:user.institution.name|default:"Lovely Professional University (LPU), Phagwara, Punjab" }}</strong>
+            <small>Main University Campus &bull; Phagwara, Punjab</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications Bell -->
+    <div class="header-notification-wrapper">
+      <a href="{% url 'items:notifications' %}" class="header-icon-btn" title="Notifications">
+        <i class="fa-regular fa-bell"></i>
+        {% if unread_notifications_count %}
+          <span class="notification-badge-pulse">{{ unread_notifications_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+
+    <!-- User Profile Dropdown -->
+    <div class="header-user-wrapper">
+      <button class="header-user-btn" id="headerUserBtn" aria-expanded="false" aria-haspopup="true">
+        <div class="header-user-avatar">
+          {% if user.profile_picture %}
+            <img src="{{ user.profile_picture.url }}" alt="{{ user.display_name }}">
+          {% else %}
+            {{ user.first_name|first|default:user.username|first|upper }}
+          {% endif %}
+        </div>
+        <div class="header-user-details d-none d-md-block">
+          <div class="header-user-name">{{ user.get_full_name|default:user.display_name }}</div>
+          <div class="header-user-role">{{ user.get_role_display|default:"Student" }}</div>
+        </div>
+        <i class="fa-solid fa-chevron-down caret-icon" style="font-size: 0.7rem; color: #94a3b8;"></i>
+      </button>
+
+      <div class="header-user-dropdown" id="headerUserDropdown">
+        <div class="dropdown-user-header">
+          <strong>{{ user.get_full_name|default:user.display_name }}</strong>
+          <small>{{ user.email }}</small>
+          <span class="badge badge-sm badge-outline">{{ user.get_role_display|default:"Student" }}</span>
+        </div>
+        <hr class="dropdown-divider">
+        <a href="{% url 'accounts:profile' %}" class="dropdown-item">
+          <i class="fa-regular fa-id-badge"></i> My Profile
+        </a>
+        <a href="{% url 'items:dashboard' %}?tab=all" class="dropdown-item">
+          <i class="fa-solid fa-boxes-stacked"></i> My Reports
+        </a>
+        <a href="{% url 'items:my_claims' %}" class="dropdown-item">
+          <i class="fa-solid fa-clipboard-check"></i> My Claims
+        </a>
+        <a href="{% url 'items:recovery_history' %}" class="dropdown-item">
+          <i class="fa-solid fa-receipt"></i> Recovery History
+        </a>
+        <a href="{% url 'items:rewards' %}" class="dropdown-item">
+          <i class="fa-solid fa-award text-amber-500"></i> Rewards &amp; Points
+        </a>
+        <a href="{% url 'subscription_plans' %}" class="dropdown-item">
+          <i class="fa-solid fa-crown text-amber-500"></i> Campus Plans
+        </a>
+        {% if user.is_staff_member or user.is_superuser %}
+        <a href="{% url 'security_dashboard:overview' %}" class="dropdown-item text-amber-600">
+          <i class="fa-solid fa-shield-halved"></i> Security Console
+        </a>
+        {% endif %}
+        <hr class="dropdown-divider">
+        <form action="{% url 'accounts:logout' %}" method="post" style="margin: 0; padding: 0;">
+          {% csrf_token %}
+          <button type="submit" class="dropdown-item text-danger" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;" onclick="return confirm('Are you sure you want to sign out?');">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+

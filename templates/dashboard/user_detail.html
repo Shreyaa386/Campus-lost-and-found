@@ -1,0 +1,169 @@
+{% extends 'dashboard/base_admin.html' %}
+
+{% block title %}User Profile: {{ target_user.display_name }} — Security Dashboard{% endblock %}
+
+{% block admin_content %}
+<div style="margin-bottom: 1.5rem;">
+  <a href="{% url 'security_dashboard:users' %}" class="btn btn-secondary btn-sm" style="margin-bottom:0.75rem;">
+    <i class="fa-solid fa-arrow-left"></i> Back to Users Directory
+  </a>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0;">
+        {{ target_user.display_name }}
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
+        Username: <code class="font-mono">{{ target_user.username }}</code> &bull; Email: {{ target_user.email }}
+      </p>
+    </div>
+
+    <!-- Activation / Deactivation Button -->
+    <div>
+      {% if target_user == user %}
+        <span class="text-xs text-gray-400 italic">Self-management protected</span>
+      {% elif user.is_admin_user %}
+        <form method="post" action="{% url 'security_dashboard:user_toggle_status' target_user.pk %}" onsubmit="return confirm('Confirm changing account activation state for {{ target_user.username }}?');" style="display:inline;">
+          {% csrf_token %}
+          {% if target_user.is_active %}
+            <button type="submit" class="btn btn-danger btn-sm">
+              <i class="fa-solid fa-user-xmark"></i> Deactivate Account
+            </button>
+          {% else %}
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-user-check"></i> Reactivate Account
+            </button>
+          {% endif %}
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 2fr; gap:1.5rem; margin-bottom:1.5rem;">
+  <!-- Left: Profile Summary & Role Assignment Card -->
+  <div class="space-y-4" style="display:flex; flex-direction:column; gap:1rem;">
+    <div class="card p-4">
+      <h3 style="font-size:0.95rem; font-weight:700; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.75rem;">
+        Account Snapshot
+      </h3>
+      <div style="display:flex; flex-direction:column; gap:0.6rem; font-size:0.85rem;">
+        <div>
+          <span style="color:var(--text-muted); font-size:0.75rem; display:block;">Role Assignment</span>
+          <span class="badge" style="background:#f1f5f9; color:#1e3a8a; font-weight:700;">
+            {{ target_user.get_role_display }}
+          </span>
+        </div>
+        <div>
+          <span style="color:var(--text-muted); font-size:0.75rem; display:block;">Student ID / Roll No</span>
+          <span style="font-weight:600;">{{ target_user.student_id|default:"Not Applicable / None" }}</span>
+        </div>
+        <div>
+          <span style="color:var(--text-muted); font-size:0.75rem; display:block;">Department</span>
+          <span>{{ target_user.display_department }}</span>
+        </div>
+        <div>
+          <span style="color:var(--text-muted); font-size:0.75rem; display:block;">Citizenship Points</span>
+          <span style="font-family:monospace; font-weight:700; color:#10b981; font-size:1.1rem;">
+            {{ target_user.reward_points|default:0 }} pts
+          </span>
+        </div>
+        <div>
+          <span style="color:var(--text-muted); font-size:0.75rem; display:block;">Account Joined</span>
+          <span>{{ target_user.date_joined|date:"F d, Y" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Role Escalation / Update Box -->
+    {% if user.is_admin_user and target_user != user %}
+    <div class="card p-4" style="background:#f8fafc;">
+      <h3 style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin-bottom:0.5rem;">
+        <i class="fa-solid fa-shield-halved text-blue-600"></i> Role Governance
+      </h3>
+      <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.75rem;">
+        Adjust campus system privileges. Only Administrators can modify roles.
+      </p>
+      <form method="post" action="{% url 'security_dashboard:user_update_role' target_user.pk %}">
+        {% csrf_token %}
+        <div style="margin-bottom:0.75rem;">
+          <label style="font-size:0.75rem; font-weight:600; display:block; margin-bottom:0.25rem;">Select Role</label>
+          {{ role_form.role }}
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">
+          Update Role Assignment
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Activity Sections (Reports, Claims, Rewards, Alerts) -->
+  <div class="space-y-4" style="display:flex; flex-direction:column; gap:1.25rem;">
+    <!-- Reports Filed -->
+    <div class="card p-4">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.75rem;">
+        <h3 style="font-size:0.95rem; font-weight:700; margin:0;">
+          <i class="fa-solid fa-box text-blue-500"></i> Item Reports ({{ reports.count }})
+        </h3>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.825rem;">
+        {% for r in reports %}
+          <div style="padding:0.5rem 0.75rem; background:#f8fafc; border-radius:var(--radius-sm); border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span class="badge badge-{{ r.report_type }}" style="font-size:0.7rem;">{{ r.get_report_type_display }}</span>
+              <strong style="margin-left:0.35rem;">{{ r.title }}</strong>
+              <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.15rem;">{{ r.location.name }} &bull; {{ r.created_at|date:"M d, Y" }}</span>
+            </div>
+            <a href="{% url 'items:item_detail' r.pk %}" class="btn btn-secondary btn-sm" style="font-size:0.725rem;">View</a>
+          </div>
+        {% empty %}
+          <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">No reports filed by this user.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Claims Lodged -->
+    <div class="card p-4">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; margin-bottom:0.75rem;">
+        <h3 style="font-size:0.95rem; font-weight:700; margin:0;">
+          <i class="fa-solid fa-file-signature text-purple-500"></i> Ownership Claims ({{ claims.count }})
+        </h3>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.825rem;">
+        {% for c in claims %}
+          <div style="padding:0.5rem 0.75rem; background:#f8fafc; border-radius:var(--radius-sm); border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong>Claim #{{ c.pk }}: {{ c.item.title }}</strong>
+              <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-top:0.15rem;">
+                Status: <span class="badge badge-{{ c.status }}" style="font-size:0.7rem;">{{ c.get_status_display }}</span>
+                &bull; Risk Score: {{ c.fraud_risk_score }}/100
+              </span>
+            </div>
+            <a href="{% url 'security_dashboard:claim_detail' c.pk %}" class="btn btn-secondary btn-sm" style="font-size:0.725rem;">Inspect</a>
+          </div>
+        {% empty %}
+          <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">No claims lodged by this user.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Security Alerts associated with User -->
+    {% if alerts %}
+    <div class="card p-4" style="border:1px solid #fecaca; background:#fff5f5;">
+      <h3 style="font-size:0.95rem; font-weight:700; color:#991b1b; margin-bottom:0.5rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Security Monitoring Flags ({{ alerts.count }})
+      </h3>
+      <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.8rem;">
+        {% for a in alerts %}
+          <div style="background:#fff; padding:0.5rem; border-radius:var(--radius-sm); border:1px solid #fee2e2;">
+            <div style="font-weight:700; color:#1f2937;">{{ a.title }}</div>
+            <div style="font-size:0.75rem; color:#6b7280; margin-top:0.2rem;">{{ a.description }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

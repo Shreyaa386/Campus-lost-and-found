@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Withdraw Claim #{{ claim.pk }} — CampusCare{% endblock %}
+
+{% block content %}
+<div style="max-width: 520px; margin: 3rem auto;">
+  <div class="card" style="border-top: 4px solid #f59e0b;">
+    <div class="card-body" style="padding: 2.5rem; text-align: center;">
+      <div style="width: 4rem; height: 4rem; border-radius: 50%; background: #fffbeb; color: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin: 0 auto 1.25rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">
+        Withdraw Your Ownership Claim?
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+        Are you sure you want to withdraw your claim for <strong>"{{ claim.item.title }}"</strong>? Campus staff will cease review of this claim.
+      </p>
+
+      <form method="post">
+        {% csrf_token %}
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <a href="{% url 'items:claim_detail' claim.pk %}" class="btn btn-secondary">
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-danger">
+            <i class="fa-solid fa-ban"></i> Confirm Withdrawal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

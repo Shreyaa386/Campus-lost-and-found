@@ -1,0 +1,180 @@
+{% extends 'auth_base.html' %}
+{% load static %}
+
+{% block title %}Create Account — CampusCare Lost &amp; Found{% endblock %}
+
+{% block content %}
+<div class="auth-split-wrapper">
+  <!-- Left Form Section (55% width) -->
+  <div class="auth-split-left">
+    <div class="auth-form-container" style="max-width: 560px;">
+      <!-- Top Branding Row -->
+      <div class="auth-brand-row">
+        <a href="{% url 'login' %}" class="auth-brand-logo">
+          <div class="brand-icon">
+            <i class="fa-solid fa-compass"></i>
+          </div>
+          <span class="brand-name">CampusCare</span>
+          <span class="brand-tag">LPU Campus</span>
+        </a>
+      </div>
+
+      <!-- Join CampusCare Header Block -->
+      <div class="auth-header-block">
+        <h1 class="auth-heading">Join CampusCare</h1>
+        <p class="auth-subheading">
+          Create your official campus account to report missing items and claim verified belongings.
+        </p>
+      </div>
+
+      <!-- Messages & Non-field Errors -->
+      {% if messages %}
+        <div style="margin-bottom: 1.25rem;">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}" style="margin-bottom: 0.5rem;">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom: 1.25rem;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <div>{{ form.non_field_errors }}</div>
+        </div>
+      {% endif %}
+
+      <!-- Signup Form -->
+      <form method="post" action="{% url 'accounts:register' %}" enctype="multipart/form-data" class="auth-submit-form" novalidate>
+        {% csrf_token %}
+
+        <!-- Full Name (First Name & Last Name) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="auth-field-group">
+            <label for="{{ form.first_name.id_for_label }}" class="auth-field-label">
+              <span><i class="fa-solid fa-user"></i> First Name</span>
+            </label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+              <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.first_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="auth-field-group">
+            <label for="{{ form.last_name.id_for_label }}" class="auth-field-label">
+              <span><i class="fa-solid fa-user"></i> Last Name</span>
+            </label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+              <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.last_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Campus Email & Student ID -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="auth-field-group">
+            <label for="{{ form.email.id_for_label }}" class="auth-field-label">
+              <span><i class="fa-solid fa-envelope"></i> Campus Email <span style="color:#ef4444;">*</span></span>
+            </label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.email.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="auth-field-group">
+            <label for="{{ form.student_id.id_for_label }}" class="auth-field-label">
+              <span><i class="fa-solid fa-id-card"></i> Student ID / Roll No <span style="color:#ef4444;">*</span></span>
+            </label>
+            {{ form.student_id }}
+            {% if form.student_id.errors %}
+              <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.student_id.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Department & Username/Role -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="auth-field-group">
+            <label for="{{ form.department.id_for_label }}" class="auth-field-label">
+              <span><i class="fa-solid fa-building-columns"></i> Department</span>
+            </label>
+            {{ form.department }}
+            {% if form.department.errors %}
+              <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.department.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="auth-field-group">
+            <label for="{{ form.username.id_for_label }}" class="auth-field-label">
+              <span><i class="fa-solid fa-at"></i> Username (Optional)</span>
+            </label>
+            {{ form.username }}
+            {% if form.username.errors %}
+              <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.username.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Password & Confirm Password (with Show/Hide Toggles) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="auth-field-group">
+            <label for="{{ form.password.id_for_label }}" class="auth-field-label">
+              <span><i class="fa-solid fa-lock"></i> Password <span style="color:#ef4444;">*</span></span>
+            </label>
+            <div class="auth-password-wrapper">
+              {{ form.password }}
+              <button type="button" class="password-toggle-btn auth-password-toggle" data-target="{{ form.password.id_for_label }}" aria-label="Toggle password visibility">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            {% if form.password.errors %}
+              <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.password.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="auth-field-group">
+            <label for="{{ form.confirm_password.id_for_label }}" class="auth-field-label">
+              <span><i class="fa-solid fa-lock"></i> Confirm Password <span style="color:#ef4444;">*</span></span>
+            </label>
+            <div class="auth-password-wrapper">
+              {{ form.confirm_password }}
+              <button type="button" class="password-toggle-btn auth-password-toggle" data-target="{{ form.confirm_password.id_for_label }}" aria-label="Toggle password visibility">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            {% if form.confirm_password.errors %}
+              <div class="form-error"><i class="fa-solid fa-circle-exclamation"></i> {{ form.confirm_password.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Hidden / Default Campus Role and Institution -->
+        <div style="display:none;">
+          {{ form.role }}
+          {{ form.institution }}
+        </div>
+
+        <!-- Create Account Button -->
+        <button type="submit" class="btn-auth-submit auth-submit-btn" data-loading-text="Creating Account...">
+          <i class="fa-solid fa-user-plus"></i> Create Account
+        </button>
+      </form>
+
+      <!-- Switch to Login Link -->
+      <div class="auth-switch-prompt">
+        Already have a campus account?
+        <a href="{% url 'accounts:login' %}">Sign In here</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Illustrated Panel (45% width) -->
+  <div class="auth-split-right">
+    {% include 'accounts/_auth_illustration.html' %}
+  </div>
+</div>
+{% endblock %}
+

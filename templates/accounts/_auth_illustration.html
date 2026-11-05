@@ -1,0 +1,284 @@
+{% load static %}
+<div class="auth-illustration-panel">
+  <!-- Decorative Background Elements -->
+  <div class="auth-panel-circle circle-1"></div>
+  <div class="auth-panel-circle circle-2"></div>
+  <div class="auth-panel-pattern"></div>
+
+  <!-- Header Text in Illustrated Panel -->
+  <div class="auth-illustration-header">
+    <div class="auth-pill-badge">
+      <i class="fa-solid fa-shield-halved"></i> Official Campus Portal
+    </div>
+    <h2 class="auth-illustration-title">Campus Lost &amp; Found Reconnected</h2>
+    <p class="auth-illustration-desc">
+      A secure academic network designed to recover misplaced campus essentials quickly and safely.
+    </p>
+  </div>
+
+  <!-- Campus-Themed SVG Illustration Canvas -->
+  <!-- Features: University Building, Student ID Card, Key, Lock, Backpack, and Lost-Item Box -->
+  <div class="auth-svg-wrapper">
+    <svg viewBox="0 0 540 380" fill="none" xmlns="http://www.w3.org/2000/svg" class="campus-illustration-svg" role="img" aria-label="Campus Lost and Found Illustration">
+      <defs>
+        <!-- Gradients -->
+        <linearGradient id="skyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#1e40af" stop-opacity="0.1"/>
+        </linearGradient>
+
+        <linearGradient id="buildingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#e0e7ff"/>
+        </linearGradient>
+
+        <linearGradient id="roofGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#2563eb"/>
+          <stop offset="100%" stop-color="#1d4ed8"/>
+        </linearGradient>
+
+        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fbbf24"/>
+          <stop offset="100%" stop-color="#f59e0b"/>
+        </linearGradient>
+
+        <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#f1f5f9"/>
+        </linearGradient>
+
+        <linearGradient id="boxGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#d97706"/>
+          <stop offset="100%" stop-color="#b45309"/>
+        </linearGradient>
+
+        <linearGradient id="lockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#10b981"/>
+          <stop offset="100%" stop-color="#059669"/>
+        </linearGradient>
+
+        <linearGradient id="shackleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#cbd5e1"/>
+          <stop offset="50%" stop-color="#f8fafc"/>
+          <stop offset="100%" stop-color="#94a3b8"/>
+        </linearGradient>
+
+        <linearGradient id="bagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="#1e3a8a"/>
+        </linearGradient>
+
+        <!-- Shadow filter -->
+        <filter id="svgDropShadow" x="-10%" y="-10%" width="130%" height="130%">
+          <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.25"/>
+        </filter>
+        <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="8" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+      </defs>
+
+      <!-- Floor / Ground Curve -->
+      <ellipse cx="270" cy="350" rx="250" ry="24" fill="#1e3a8a" opacity="0.4"/>
+
+      <!-- ==================================================== -->
+      <!-- 1. UNIVERSITY BUILDING (Center Background)           -->
+      <!-- ==================================================== -->
+      <g id="university-building" filter="url(#svgDropShadow)">
+        <!-- Base Steps -->
+        <rect x="140" y="270" width="220" height="8" rx="2" fill="#cbd5e1"/>
+        <rect x="130" y="278" width="240" height="8" rx="2" fill="#94a3b8"/>
+
+        <!-- Main Building Façade -->
+        <rect x="150" y="160" width="200" height="110" rx="4" fill="url(#buildingGrad)"/>
+
+        <!-- Columns (4 Pillars) -->
+        <rect x="165" y="175" width="14" height="95" rx="3" fill="#cbd5e1"/>
+        <rect x="210" y="175" width="14" height="95" rx="3" fill="#cbd5e1"/>
+        <rect x="276" y="175" width="14" height="95" rx="3" fill="#cbd5e1"/>
+        <rect x="321" y="175" width="14" height="95" rx="3" fill="#cbd5e1"/>
+
+        <!-- Arched Main Entrance -->
+        <path d="M235 270 V220 Q250 206 265 220 V270 Z" fill="#1e293b"/>
+        <!-- Window Panes -->
+        <rect x="188" y="190" width="14" height="24" rx="2" fill="#3b82f6" opacity="0.4"/>
+        <rect x="298" y="190" width="14" height="24" rx="2" fill="#3b82f6" opacity="0.4"/>
+
+        <!-- Classical Pediment (Triangle Roof) -->
+        <polygon points="140,160 250,105 360,160" fill="url(#roofGrad)"/>
+        <!-- Pediment Medallion / Compass Emblem -->
+        <circle cx="250" cy="140" r="11" fill="#ffffff" opacity="0.9"/>
+        <polygon points="250,132 253,140 250,148 247,140" fill="#2563eb"/>
+        <polygon points="242,140 250,143 258,140 250,137" fill="#f59e0b"/>
+
+        <!-- Central Clock Tower Above Building -->
+        <rect x="235" y="62" width="30" height="44" rx="2" fill="url(#buildingGrad)"/>
+        <!-- Clock Face -->
+        <circle cx="250" cy="80" r="10" fill="#ffffff" stroke="#2563eb" stroke-width="1.5"/>
+        <circle cx="250" cy="80" r="1.5" fill="#1e293b"/>
+        <!-- Hands at 10:10 -->
+        <line x1="250" y1="80" x2="245" y2="74" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="250" y1="80" x2="256" y2="76" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round"/>
+
+        <!-- Tower Roof & Waving Campus Flag -->
+        <polygon points="230,62 250,42 270,62" fill="url(#roofGrad)"/>
+        <line x1="250" y1="42" x2="250" y2="20" stroke="#f8fafc" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M250 22 Q260 17 268 22 Q274 26 280 23 L280 34 Q273 37 267 33 Q259 31 250 35 Z" fill="#fbbf24"/>
+      </g>
+
+      <!-- ==================================================== -->
+      <!-- 2. STUDENT ID CARD (Floating Top Right)              -->
+      <!-- ==================================================== -->
+      <g id="student-id-card" filter="url(#svgDropShadow)" transform="rotate(-6 420 120)">
+        <!-- Card Body -->
+        <rect x="360" y="65" width="135" height="88" rx="8" fill="url(#cardGrad)" stroke="#dbeafe" stroke-width="1.5"/>
+        <!-- Top Campus Header Stripe -->
+        <path d="M360 73 Q360 65 368 65 H487 Q495 65 495 73 V84 H360 Z" fill="#2563eb"/>
+        <text x="370" y="78" fill="#ffffff" font-size="7.5" font-weight="bold" font-family="sans-serif">CAMPUS SMART ID</text>
+        <circle cx="484" cy="74.5" r="3" fill="#fbbf24"/>
+
+        <!-- Photo Avatar Frame -->
+        <rect x="372" y="93" width="30" height="36" rx="4" fill="#cbd5e1"/>
+        <circle cx="387" cy="104" r="6" fill="#64748b"/>
+        <path d="M375 125 Q387 114 399 125 Z" fill="#64748b"/>
+
+        <!-- Gold Smart Chip -->
+        <rect x="410" y="93" width="16" height="13" rx="2" fill="url(#goldGrad)"/>
+        <line x1="410" y1="99" x2="426" y2="99" stroke="#b45309" stroke-width="0.8"/>
+        <line x1="418" y1="93" x2="418" y2="106" stroke="#b45309" stroke-width="0.8"/>
+
+        <!-- Student Info Text Lines -->
+        <rect x="432" y="94" width="50" height="4" rx="2" fill="#1e293b"/>
+        <rect x="410" y="112" width="72" height="3" rx="1.5" fill="#64748b"/>
+        <rect x="410" y="119" width="55" height="3" rx="1.5" fill="#94a3b8"/>
+        <rect x="410" y="126" width="35" height="3" rx="1.5" fill="#2563eb"/>
+
+        <!-- Mini Barcode -->
+        <rect x="372" y="136" width="110" height="7" rx="1" fill="#e2e8f0"/>
+        <line x1="376" y1="137" x2="376" y2="142" stroke="#0f172a" stroke-width="1.2"/>
+        <line x1="380" y1="137" x2="380" y2="142" stroke="#0f172a" stroke-width="0.8"/>
+        <line x1="383" y1="137" x2="383" y2="142" stroke="#0f172a" stroke-width="1.6"/>
+        <line x1="388" y1="137" x2="388" y2="142" stroke="#0f172a" stroke-width="0.9"/>
+        <line x1="392" y1="137" x2="392" y2="142" stroke="#0f172a" stroke-width="1.4"/>
+        <line x1="397" y1="137" x2="397" y2="142" stroke="#0f172a" stroke-width="1.8"/>
+        <line x1="403" y1="137" x2="403" y2="142" stroke="#0f172a" stroke-width="0.8"/>
+        <line x1="407" y1="137" x2="407" y2="142" stroke="#0f172a" stroke-width="1.3"/>
+      </g>
+
+      <!-- ==================================================== -->
+      <!-- 3. GOLDEN RECOVERY KEY (Floating Top Left)           -->
+      <!-- ==================================================== -->
+      <g id="campus-key" filter="url(#svgDropShadow)" transform="rotate(28 65 95)">
+        <!-- Key Head (Bow) -->
+        <circle cx="55" cy="85" r="16" fill="url(#goldGrad)" stroke="#fde68a" stroke-width="2"/>
+        <circle cx="55" cy="85" r="7" fill="#1e3a8a"/>
+        <!-- Key Shaft -->
+        <rect x="68" y="82" width="46" height="6" rx="2" fill="url(#goldGrad)" stroke="#fde68a" stroke-width="1"/>
+        <!-- Key Teeth / Bits -->
+        <rect x="96" y="88" width="5" height="9" rx="1" fill="url(#goldGrad)"/>
+        <rect x="105" y="88" width="5" height="13" rx="1" fill="url(#goldGrad)"/>
+        <!-- Sparkle Star -->
+        <path d="M40 68 Q45 68 45 63 Q45 68 50 68 Q45 68 45 73 Q45 68 40 68 Z" fill="#ffffff"/>
+      </g>
+
+      <!-- ==================================================== -->
+      <!-- 4. SECURITY LOCK (Padlock Lower Right)               -->
+      <!-- ==================================================== -->
+      <g id="security-lock" filter="url(#svgDropShadow)" transform="translate(425, 220)">
+        <!-- Curved Metal Shackle -->
+        <path d="M18 35 V18 C18 6, 42 6, 42 18 V35" fill="none" stroke="url(#shackleGrad)" stroke-width="8" stroke-linecap="round"/>
+        <!-- Lock Main Body -->
+        <rect x="6" y="32" width="48" height="42" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+        <rect x="10" y="36" width="40" height="34" rx="6" fill="#0f172a"/>
+        <!-- Keyhole -->
+        <circle cx="30" cy="50" r="4.5" fill="#fbbf24"/>
+        <polygon points="28,52 32,52 33,60 27,60" fill="#fbbf24"/>
+        <!-- Verified Shield Badge -->
+        <g transform="translate(36, 18) scale(0.85)">
+          <path d="M12 2 L22 6 V12 C22 18 16 23 12 25 C8 23 2 18 2 12 V6 Z" fill="url(#lockGrad)" stroke="#ffffff" stroke-width="1.5"/>
+          <path d="M7 12 L10 15 L17 8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </g>
+
+      <!-- ==================================================== -->
+      <!-- 5. STUDENT BACKPACK (Lower Left)                     -->
+      <!-- ==================================================== -->
+      <g id="student-backpack" filter="url(#svgDropShadow)" transform="translate(42, 210)">
+        <!-- Top Carry Handle -->
+        <path d="M42 30 C42 14, 66 14, 66 30" fill="none" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+        <!-- Main Bag Body -->
+        <path d="M22 45 C22 25, 86 25, 86 45 V105 C86 114, 80 120, 70 120 H38 C28 120, 22 114, 22 105 Z" fill="url(#bagGrad)"/>
+        <!-- Front Flap / Zipper Compartment -->
+        <path d="M28 65 H80 V105 C80 110, 76 113, 70 113 H38 C32 113, 28 110, 28 105 Z" fill="#1d4ed8"/>
+        <!-- Horizontal Zipper Line -->
+        <line x1="34" y1="78" x2="74" y2="78" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3,2"/>
+        <circle cx="74" cy="78" r="2.5" fill="#fbbf24"/>
+        <!-- Compass Tag on Zipper -->
+        <circle cx="36" cy="94" r="7" fill="#fbbf24"/>
+        <polygon points="36,89 38,94 36,99 34,94" fill="#1e3a8a"/>
+        <!-- Side Mesh Bottle Pocket -->
+        <path d="M18 78 H22 V105 H18 C15 105, 14 102, 14 98 V85 C14 81, 15 78, 18 78 Z" fill="#1e293b" opacity="0.6"/>
+        <rect x="14" y="66" width="6" height="15" rx="2" fill="#06b6d4"/>
+      </g>
+
+      <!-- ==================================================== -->
+      <!-- 6. LOST & FOUND STORAGE CRATE (Center Bottom)        -->
+      <!-- ==================================================== -->
+      <g id="lost-and-found-box" filter="url(#svgDropShadow)" transform="translate(200, 245)">
+        <!-- Open Parcel Box Body -->
+        <path d="M10 32 L130 32 L120 95 L20 95 Z" fill="url(#boxGrad)"/>
+        <!-- Left Flap Folded Out -->
+        <polygon points="10,32 30,12 55,32" fill="#92400e"/>
+        <!-- Right Flap Folded Out -->
+        <polygon points="130,32 110,12 85,32" fill="#92400e"/>
+
+        <!-- Items Peeking Out of Box -->
+        <!-- Textbook / Notebook -->
+        <rect x="35" y="10" width="30" height="26" rx="2" transform="rotate(-12 35 10)" fill="#ef4444"/>
+        <line x1="38" y1="18" x2="58" y2="14" stroke="#ffffff" stroke-width="1.5"/>
+        <line x1="40" y1="24" x2="60" y2="20" stroke="#ffffff" stroke-width="1.5"/>
+
+        <!-- Smartphone -->
+        <rect x="75" y="14" width="22" height="34" rx="4" transform="rotate(8 75 14)" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+        <rect x="78" y="18" width="16" height="24" rx="2" transform="rotate(8 78 18)" fill="#38bdf8"/>
+
+        <!-- Front Box Face with Tape -->
+        <rect x="16" y="32" width="108" height="63" rx="3" fill="#b45309"/>
+        <!-- Packing Tape -->
+        <line x1="70" y1="32" x2="70" y2="95" stroke="#fef3c7" stroke-width="10" opacity="0.75"/>
+
+        <!-- LOST & FOUND Badge -->
+        <rect x="28" y="52" width="84" height="22" rx="4" fill="#ffffff"/>
+        <text x="34" y="67" fill="#1e3a8a" font-size="9.5" font-weight="900" font-family="sans-serif" letter-spacing="0.5">LOST &amp; FOUND</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Highlights / Trust Pillars -->
+  <div class="auth-trust-pillars">
+    <div class="trust-item">
+      <div class="trust-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+      <div>
+        <div class="trust-title">Smart Matching Engine</div>
+        <div class="trust-desc">Auto-compares items by category, location &amp; attributes.</div>
+      </div>
+    </div>
+
+    <div class="trust-item">
+      <div class="trust-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <div>
+        <div class="trust-title">Confidential Ownership Proof</div>
+        <div class="trust-desc">Private verification questions keep identification secure.</div>
+      </div>
+    </div>
+
+    <div class="trust-item">
+      <div class="trust-icon"><i class="fa-solid fa-receipt"></i></div>
+      <div>
+        <div class="trust-title">Secure OTP Handover</div>
+        <div class="trust-desc">Time-limited verification codes with digital receipts.</div>
+      </div>
+    </div>
+  </div>
+</div>
+

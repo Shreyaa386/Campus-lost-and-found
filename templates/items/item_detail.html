@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ item.title }} — CampusCare{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav
+  style="margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;">
+  <a href="{% url 'items:home' %}">Home</a>
+  <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i>
+  {% if item.report_type == 'lost' %}
+  <a href="{% url 'items:lost_items' %}">Lost Items</a>
+  {% else %}
+  <a href="{% url 'items:found_items' %}">Found Items</a>
+  {% endif %}
+  <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i>
+  <span style="color: var(--text-main); font-weight: 600;">{{ item.title|truncatechars:35 }}</span>
+</nav>
+
+<!-- Main Detail Layout -->
+<div class="detail-layout">
+  <!-- Left Column: Item Image & Reporter Profile Card -->
+  <div>
+    <div class="detail-image-box">
+      {% if item.image %}
+      <img src="{{ item.image.url }}" alt="{{ item.title }}">
+      {% else %}
+      <div style="text-align: center; color: #94a3b8; padding: 3rem 1rem;">
+        <i class="fa-solid {{ item.category.icon|default:'fa-box' }}" style="font-size: 5rem; margin-bottom: 1rem;"></i>
+        <p style="font-size: 0.95rem; font-weight: 500;">No photo provided by reporter</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Smart Matching Card Shortcut -->
+    {% if user.is_authenticated and item.can_edit or user.is_staff_member %}
+    <div class="card" style="margin-top: 1.25rem; border: 1px solid #bfdbfe; background: #eff6ff;">
+      <div class="card-body"
+        style="padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+        <div>
+          <div
+            style="display: flex; align-items: center; gap: 0.4rem; font-weight: 700; color: #1e40af; font-size: 0.95rem;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Smart Matching
+          </div>
+          <p style="font-size: 0.8rem; color: #3b82f6; margin: 0.15rem 0 0;">
+            AI & weighted comparison against reported {% if item.report_type == 'lost' %}found{% else %}lost{% endif %}
+            items.
+          </p>
+        </div>
+        <a href="{% url 'items:item_matches' item.pk %}" class="btn btn-primary btn-sm">
+          View Matches ({{ matches_count }})
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Reporter Profile Card -->
+    <div class="card" style="margin-top: 1.25rem; padding: 1.25rem;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div
+          style="width: 3.25rem; height: 3.25rem; border-radius: 50%; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 700; overflow: hidden; border: 1px solid var(--border-color);">
+          {% if item.user.profile_picture %}
+          <img src="{{ item.user.profile_picture.url }}" alt="{{ item.user.display_name }}"
+            style="width:100%; height:100%; object-fit:cover;">
+          {% else %}
+          {{ item.user.first_name|first|default:item.user.username|first|upper }}
+          {% endif %}
+        </div>
+        <div>
+          <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">
+            {{ item.user.display_name }}
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">
+            <span class="badge"
+              style="background: #f1f5f9; color: var(--secondary); padding: 0.15rem 0.5rem; font-size: 0.75rem;">
+              {{ item.user.get_role_display }}
+            </span>
+            &bull; {{ item.user.display_department }}
+          </div>
+          <div style="font-size: 0.775rem; color: var(--text-light); margin-top: 0.2rem;">
+            Member of {{ item.institution.short_name|default:item.institution.name }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report Expiration / Active Rule Info -->
+    {% if item.expires_at %}
+    <div
+      style="margin-top: 1rem; font-size: 0.825rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem; padding: 0.75rem 1rem; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i>
+      <span>Report validity window: active until <strong>{{ item.expires_at|date:"M d, Y" }}</strong></span>
+    </div>
+    {% endif %}
+
+    <!-- Useful Actions: Lifecycle Timeline & Coordination Chat -->
+    <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.65rem;">
+      <a href="{% url 'items:recovery_timeline' item.pk %}" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; background: #fff;">
+        <i class="fa-solid fa-timeline"></i> Lifecycle &amp; Recovery Timeline
+      </a>
+      {% if user.is_authenticated %}
+        {% if is_reporter %}
+          {% if has_claims %}
+            <a href="{% url 'items:item_conversation' item.pk %}" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;">
+              <i class="fa-solid fa-comments"></i> Anonymous Coordination Chat
+            </a>
+          {% else %}
+            <button class="btn btn-secondary btn-sm" disabled style="width: 100%; justify-content: center; opacity: 0.75; cursor: not-allowed; background: #f8fafc;" title="Coordination chat unlocks when an ownership claim is submitted for this item.">
+              <i class="fa-solid fa-comments"></i> Coordination Chat <span style="font-size: 0.675rem; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">Awaiting Claims</span>
+            </button>
+          {% endif %}
+        {% elif user_active_claim %}
+          <a href="{% url 'items:item_conversation' item.pk %}" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;">
+            <i class="fa-solid fa-comments"></i> Chat with Finder / Custodian
+          </a>
+        {% elif user.is_staff_member %}
+          <a href="{% url 'items:item_conversation' item.pk %}" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; background: #fff;">
+            <i class="fa-solid fa-comments"></i> Staff Coordination Chat
+          </a>
+        {% else %}
+          <a href="{% url 'items:item_claim' item.pk %}" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; background: #fff;" title="Submit an ownership claim to coordinate with the finder">
+            <i class="fa-solid fa-shield-halved"></i> Claim to Unlock Chat
+          </a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Details, Claim CTA, Safe Contact, Actions, Status History -->
+  <div>
+    <div class="detail-info-card">
+      <!-- Type & Status Badges -->
+      <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+        {% if item.report_type == 'lost' %}
+        <span class="badge badge-lost"><i class="fa-solid fa-circle-exclamation"></i> Lost Item</span>
+        {% else %}
+        <span class="badge badge-found"><i class="fa-solid fa-hand-holding-heart"></i> Found Item</span>
+        {% endif %}
+        <span class="badge badge-{{ item.status }}"><i class="fa-solid fa-tag"></i> {{ item.get_status_display }}</span>
+        <span class="badge"
+          style="background: #f8fafc; border: 1px solid var(--border-color); color: var(--text-muted);">
+          <i class="fa-solid {{ item.category.icon|default:'fa-box' }}"></i> {{ item.category.name }}
+        </span>
+      </div>
+
+      <!-- Title -->
+      {% if item.status == 'expired' %}
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); padding: 0.95rem 1.25rem; margin-bottom: 1.25rem; color: #991b1b; display: flex; align-items: flex-start; gap: 0.75rem;">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.15rem; margin-top: 2px;"></i>
+        <div>
+          <strong style="display: block; font-size: 0.9rem; margin-bottom: 0.2rem;">Item Report Retention Window Expired</strong>
+          <span style="font-size: 0.825rem; line-height: 1.5;">This item report is past its standard active window. If you found or recognize this item, you may report a found item or contact campus security at <a href="mailto:lostandfound@lpu.in" style="color:#991b1b; text-decoration: underline; font-weight:700;">lostandfound@lpu.in</a>.</span>
+        </div>
+      </div>
+      {% endif %}
+      <h1
+        style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); line-height: 1.25; margin-bottom: 1.25rem;">
+        {{ item.title }}
+      </h1>
+
+      <!-- Handover and Recovery Status Banner -->
+      {% if item_handover %}
+      <div style="background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="font-weight: 700; color: #1e40af; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-handshake"></i> Recovery Handover: {{ item_handover.get_status_display }}
+            </div>
+            <p style="font-size: 0.825rem; color: #2563eb; margin: 0.2rem 0 0;">
+              Location: <strong>{{ item_handover.handover_location }}</strong>
+              {% if item_handover.status == 'verified' %}
+                &bull; <span class="text-green-700 font-bold">Successfully Verified</span>
+              {% endif %}
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'items:handover_detail' item_handover.pk %}" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-key"></i> View Handover & OTP
+            </a>
+            {% if item_receipt %}
+            <a href="{% url 'items:recovery_receipt' item_receipt.pk %}" class="btn btn-secondary btn-sm" style="background:#fff;">
+              <i class="fa-solid fa-file-invoice"></i> View Receipt
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- OWNERSHIP CLAIM CTA (If Found Item) -->
+      {% if item.report_type == 'found' %}
+      <div
+        style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="font-weight: 700; color: #166534; font-size: 1.05rem;">
+              Is this your lost belonging?
+            </div>
+            <p style="font-size: 0.85rem; color: #15803d; margin: 0.2rem 0 0;">
+              Submit confidential proof of ownership to verify and recover your item.
+            </p>
+          </div>
+
+          {% if user_active_claim %}
+          <a href="{% url 'items:claim_detail' user_active_claim.pk %}" class="btn btn-secondary btn-sm"
+            style="background:#fff;">
+            <i class="fa-solid fa-file-signature"></i> View My Claim ({{ user_active_claim.get_status_display }})
+          </a>
+          {% elif user.is_authenticated and user != item.user %}
+          <a href="{% url 'items:item_claim' item.pk %}" class="btn btn-found">
+            <i class="fa-solid fa-hand-holding-heart"></i> Claim This Item
+          </a>
+          {% elif not user.is_authenticated %}
+          <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-primary btn-sm">
+            Sign In to Claim
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Staff Multiple Claimants Banner -->
+      {% if user.is_staff_member and claims_count > 0 %}
+      <div
+        style="background: #fefce8; border: 1px solid #fef08a; border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 0.875rem; color: #854d0e;">
+          <i class="fa-solid fa-users" style="margin-right: 0.35rem;"></i>
+          <strong>{{ claims_count }} ownership claim(s)</strong> lodged for this item.
+        </div>
+        <a href="{% url 'items:admin_claims_list' %}?q={{ item.title }}" class="btn btn-secondary btn-sm"
+          style="font-size: 0.8rem;">
+          Review Claims
+        </a>
+      </div>
+      {% endif %}
+
+      <!-- Meta Grid -->
+      <div
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.25rem; background: #f8fafc; border-radius: var(--radius-md); border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+        <div>
+          <div style="font-size: 0.775rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+            {% if item.report_type == 'lost' %}Date Lost{% else %}Date Discovered{% endif %}
+          </div>
+          <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-top: 0.2rem;">
+            <i class="fa-solid fa-calendar-day" style="color: var(--primary); margin-right: 0.3rem;"></i>
+            {{ item.date_lost_or_found|date:"F d, Y" }}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.775rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+            Campus Location
+          </div>
+          <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-top: 0.2rem;">
+            <i class="fa-solid fa-location-dot" style="color: #ef4444; margin-right: 0.3rem;"></i>
+            {{ item.location.name|default:"Campus Area" }}
+          </div>
+        </div>
+
+        {% if item.location_details %}
+        <div style="grid-column: 1 / -1;">
+          <div style="font-size: 0.775rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+            Specific Location Details
+          </div>
+          <div style="font-size: 0.9rem; color: var(--text-main); margin-top: 0.2rem;">
+            <i class="fa-solid fa-map-pin" style="color: var(--primary); margin-right: 0.3rem;"></i>
+            {{ item.location_details }}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Item Description -->
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+          Item Description
+        </h3>
+        <div style="font-size: 0.95rem; color: #334155; line-height: 1.7; white-space: pre-line; background: #ffffff;">
+          {{ item.description }}
+        </div>
+      </div>
+
+      <!-- Contact Details / Privacy Protection Section -->
+      <div class="contact-privacy-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 0;">
+            <i class="fa-solid fa-address-book" style="color: var(--primary); margin-right: 0.4rem;"></i>
+            Contact Information
+          </h3>
+          <span style="font-size: 0.75rem; color: #059669; font-weight: 600;">
+            <i class="fa-solid fa-shield-check"></i> Privacy Guard Active
+          </span>
+        </div>
+
+        {% if item.contact_preference == 'campus_desk' %}
+        <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">
+          <p style="margin-bottom: 0.5rem;">
+            The reporter has selected <strong>Campus Lost & Found Desk</strong> for safe handover.
+          </p>
+          <div
+            style="background: #ffffff; padding: 0.875rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-size: 0.85rem;">
+            <div><strong>Helpdesk:</strong> Central Security & Student Affairs Office</div>
+            <div><strong>Location:</strong> Admin Block, Ground Floor (Counter 3)</div>
+            <div><strong>Hours:</strong> Mon - Sat: 9:00 AM - 5:30 PM</div>
+          </div>
+        </div>
+        {% elif can_view_contact %}
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Verified campus contact info for this report:
+        </p>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          {% if item.contact_preference != 'phone' and item.contact_email %}
+          <a href="mailto:{{ item.contact_email }}" class="btn btn-secondary btn-sm" style="background:#fff;">
+            <i class="fa-solid fa-envelope" style="color:var(--primary);"></i> {{ item.contact_email }}
+          </a>
+          {% endif %}
+          {% if item.contact_preference != 'email' and item.contact_phone %}
+          <a href="tel:{{ item.contact_phone }}" class="btn btn-secondary btn-sm" style="background:#fff;">
+            <i class="fa-solid fa-phone" style="color:#10b981;"></i> {{ item.contact_phone }}
+          </a>
+          {% endif %}
+        </div>
+        {% else %}
+        <div
+          style="text-align: center; padding: 1.25rem; background: #ffffff; border-radius: var(--radius-sm); border: 1px dashed var(--border-color);">
+          <i class="fa-solid fa-lock" style="font-size: 1.75rem; color: var(--text-light); margin-bottom: 0.5rem;"></i>
+          <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.25rem;">
+            Contact Information is Protected
+          </p>
+          <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            To prevent spam and protect student privacy, please sign in with your campus account to view contact
+            details.
+          </p>
+          <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to View Contact
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Owner & Staff Management Controls -->
+      {% if can_edit %}
+      <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+          <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 0;">
+            <i class="fa-solid fa-gear"></i> Manage This Report
+          </h4>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'items:item_matches' item.pk %}" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Matches ({{ matches_count }})
+            </a>
+            <a href="{% url 'items:item_edit' item.pk %}" class="btn btn-secondary btn-sm">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </a>
+            {% if can_delete %}
+            <a href="{% url 'items:item_delete' item.pk %}" class="btn btn-danger btn-sm">
+              <i class="fa-solid fa-trash"></i> Delete
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Quick Status Update Form -->
+        {% if status_form %}
+        <form action="{% url 'items:item_update_status' item.pk %}" method="post"
+          style="background: #ffffff; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+          {% csrf_token %}
+          <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 180px;">
+              <label class="form-label" style="font-size: 0.8rem;">Change Status</label>
+              {{ status_form.status }}
+            </div>
+            <div style="flex: 2; min-width: 220px;">
+              <label class="form-label" style="font-size: 0.8rem;">Remarks / Verification Notes</label>
+              {{ status_form.remarks }}
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="height: 2.45rem;">
+              Update Status
+            </button>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Report History / Audit Trail Timeline -->
+      <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+        <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;">
+          <i class="fa-solid fa-timeline"></i> Report History & Activity Log
+        </h4>
+        <ul class="timeline">
+          {% for log in history_logs %}
+          <li class="timeline-item">
+            <span class="timeline-dot"></span>
+            <div style="font-weight: 600; font-size: 0.875rem; color: var(--text-main);">
+              {% if log.old_status %}
+              Status changed: <span class="badge badge-{{ log.old_status }}">{{ log.old_status }}</span> &rarr; <span
+                class="badge badge-{{ log.new_status }}">{{ log.new_status }}</span>
+              {% else %}
+              Report submitted with status <span class="badge badge-{{ log.new_status }}">{{ log.new_status }}</span>
+              {% endif %}
+            </div>
+            {% if log.remarks %}
+            <div style="font-size: 0.825rem; color: var(--text-muted); margin-top: 0.2rem;">
+              "{{ log.remarks }}"
+            </div>
+            {% endif %}
+            <div class="timeline-time">
+              {{ log.created_at|date:"M d, Y, h:i A" }}
+              {% if log.changed_by %}
+              &bull; by {{ log.changed_by.display_name }} ({{ log.changed_by.get_role_display }})
+              {% else %}
+              &bull; by System Expiration Task
+              {% endif %}
+            </div>
+          </li>
+          {% empty %}
+          <li style="font-size: 0.85rem; color: var(--text-muted);">No history events recorded.</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

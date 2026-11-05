@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {% if report_type == 'lost' %}Report Lost Item{% else %}Report Found Item{% endif %} — CampusCare
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 780px; margin: 0 auto;">
+  <!-- Header -->
+  <div style="margin-bottom: 2rem; text-align: center;">
+    {% if report_type == 'lost' %}
+      <span class="badge badge-lost" style="font-size: 0.85rem; padding: 0.35rem 0.85rem; margin-bottom: 0.5rem;">
+        <i class="fa-solid fa-circle-exclamation"></i> Lost Item Report
+      </span>
+      <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-main);">Report a Lost Valuable</h1>
+      <p style="color: var(--text-muted); font-size: 1rem; max-width: 550px; margin: 0.25rem auto 0;">
+        Describe what you lost accurately so that whoever discovers it can quickly identify and return it to you.
+      </p>
+    {% else %}
+      <span class="badge badge-found" style="font-size: 0.85rem; padding: 0.35rem 0.85rem; margin-bottom: 0.5rem;">
+        <i class="fa-solid fa-hand-holding-heart"></i> Found Item Report
+      </span>
+      <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-main);">Report a Found Item</h1>
+      <p style="color: var(--text-muted); font-size: 1rem; max-width: 550px; margin: 0.25rem auto 0;">
+        Thank you for being a responsible campus citizen! Report the item to reconnect it with its rightful owner.
+      </p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="padding: 2.25rem;">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <div>{{ form.non_field_errors }}</div>
+          </div>
+        {% endif %}
+
+        <!-- Item Title -->
+        <div class="form-group">
+          <label for="{{ form.title.id_for_label }}" class="form-label">
+            {{ form.title.label }} <span style="color:#ef4444;">*</span>
+          </label>
+          {{ form.title }}
+          {% if form.title.errors %}
+            <div class="form-error">{{ form.title.errors.0 }}</div>
+          {% endif %}
+          <div class="form-help">Keep it descriptive: e.g. "Navy Blue Acer Predator Laptop" or "Keychain with 3 Keys & Iron Man figure".</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+          <!-- Category -->
+          <div class="form-group">
+            <label for="{{ form.category.id_for_label }}" class="form-label">
+              Category <span style="color:#ef4444;">*</span>
+            </label>
+            {{ form.category }}
+            {% if form.category.errors %}
+              <div class="form-error">{{ form.category.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Date -->
+          <div class="form-group">
+            <label for="{{ form.date_lost_or_found.id_for_label }}" class="form-label">
+              {{ form.date_lost_or_found.label }} <span style="color:#ef4444;">*</span>
+            </label>
+            {{ form.date_lost_or_found }}
+            {% if form.date_lost_or_found.errors %}
+              <div class="form-error">{{ form.date_lost_or_found.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Campus Location -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+          <div class="form-group">
+            <label for="{{ form.location.id_for_label }}" class="form-label">
+              {{ form.location.label }}
+            </label>
+            {{ form.location }}
+            {% if form.location.errors %}
+              <div class="form-error">{{ form.location.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.location_details.id_for_label }}" class="form-label">
+              Specific Spot / Details
+            </label>
+            {{ form.location_details }}
+            {% if form.location_details.errors %}
+              <div class="form-error">{{ form.location_details.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label for="{{ form.description.id_for_label }}" class="form-label">
+            Detailed Description <span style="color:#ef4444;">*</span>
+          </label>
+          {{ form.description }}
+          {% if form.description.errors %}
+            <div class="form-error">{{ form.description.errors.0 }}</div>
+          {% endif %}
+          <div class="form-help">
+            Mention distinctive features, brand, color, case details, stickers, or scratches. Avoid posting sensitive codes like full debit card numbers!
+          </div>
+        </div>
+
+        <!-- Image Upload -->
+        <div class="form-group">
+          <label for="{{ form.image.id_for_label }}" class="form-label">
+            Item Image (Recommended)
+          </label>
+          {{ form.image }}
+          {% if form.image.errors %}
+            <div class="form-error">{{ form.image.errors.0 }}</div>
+          {% endif %}
+          <div class="form-help">Upload a clear photo (JPG, PNG, or WEBP, max 5MB).</div>
+
+          <!-- Live JS Preview Container -->
+          <div id="imagePreviewContainer" style="display:none; margin-top:1rem; max-width:240px; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border-color);">
+            <img id="imagePreview" src="#" alt="Upload Preview" style="width:100%; height:auto;">
+          </div>
+        </div>
+
+        <!-- Privacy & Contact Preferences Section -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:1.25rem; margin-top:2rem; margin-bottom:1.5rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+            <i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i>
+            <h4 style="font-size:1rem; font-weight:700; color:var(--text-main); margin:0;">Contact & Privacy Preferences</h4>
+          </div>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+            To safeguard student privacy, contact details are never shown to anonymous visitors. You can also route communication exclusively through the Campus Lost & Found Desk.
+          </p>
+
+          <div class="form-group">
+            <label for="{{ form.contact_preference.id_for_label }}" class="form-label">
+              Contact Preference <span style="color:#ef4444;">*</span>
+            </label>
+            {{ form.contact_preference }}
+            {% if form.contact_preference.errors %}
+              <div class="form-error">{{ form.contact_preference.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="{{ form.contact_email.id_for_label }}" class="form-label">Contact Email</label>
+              {{ form.contact_email }}
+              {% if form.contact_email.errors %}
+                <div class="form-error">{{ form.contact_email.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="{{ form.contact_phone.id_for_label }}" class="form-label">Contact Phone</label>
+              {{ form.contact_phone }}
+              {% if form.contact_phone.errors %}
+                <div class="form-error">{{ form.contact_phone.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit and Cancel -->
+        <div style="display:flex; justify-content:flex-end; gap:1rem; align-items:center; margin-top:2rem;">
+          <a href="{% url 'items:home' %}" class="btn btn-secondary">
+            Cancel
+          </a>
+          <button type="submit" class="btn {% if report_type == 'lost' %}btn-lost{% else %}btn-found{% endif %} btn-lg">
+            <i class="fa-solid fa-paper-plane"></i> Publish Report
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

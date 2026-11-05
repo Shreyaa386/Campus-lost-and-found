@@ -1,0 +1,138 @@
+{% extends 'dashboard/base_admin.html' %}
+
+{% block title %}User Management — Security Dashboard — CampusCare{% endblock %}
+
+{% block admin_content %}
+<div style="margin-bottom: 1.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0;">
+        Campus User Governance
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
+        Monitor students, faculty, campus staff, and administrator accounts.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Search and Filter Bar -->
+<div class="card p-4 mb-4" style="margin-bottom:1.5rem;">
+  <form method="get" action="{% url 'security_dashboard:users' %}" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-end;">
+    <div style="flex:2; min-width:220px;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Search Users</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by name, student ID, username, or email..." class="form-input" style="width:100%;" />
+    </div>
+
+    <div style="flex:1; min-width:140px;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Role</label>
+      <select name="role" class="form-select" style="width:100%;">
+        <option value="">All Campus Roles</option>
+        {% for r_val, r_label in roles %}
+          <option value="{{ r_val }}" {% if role_filter == r_val %}selected{% endif %}>{{ r_label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="flex:1; min-width:130px;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Status</label>
+      <select name="status" class="form-select" style="width:100%;">
+        <option value="">All Statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Deactivated</option>
+      </select>
+    </div>
+
+    <div>
+      <button type="submit" class="btn btn-primary" style="height:2.45rem;">
+        <i class="fa-solid fa-filter"></i> Apply Filters
+      </button>
+      {% if q or role_filter or status_filter %}
+        <a href="{% url 'security_dashboard:users' %}" class="btn btn-secondary" style="height:2.45rem;">Reset</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Users Table -->
+<div class="card p-0" style="overflow:hidden;">
+  <div class="table-responsive">
+    <table class="table" style="width:100%; font-size:0.875rem; border-collapse:collapse;">
+      <thead style="background:#f8fafc; border-bottom:1.5px solid var(--border-color); text-transform:uppercase; font-size:0.75rem; color:var(--text-muted);">
+        <tr>
+          <th style="padding:0.75rem 1rem;">Campus Member</th>
+          <th style="padding:0.75rem 1rem;">Role</th>
+          <th style="padding:0.75rem 1rem;">Department</th>
+          <th style="padding:0.75rem 1rem; text-align:center;">Points</th>
+          <th style="padding:0.75rem 1rem; text-align:center;">Status</th>
+          <th style="padding:0.75rem 1rem; text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in page_obj %}
+          <tr style="border-bottom:1px solid var(--border-color);">
+            <td style="padding:0.85rem 1rem;">
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <div style="width:2.25rem; height:2.25rem; border-radius:50%; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem;">
+                  {{ u.first_name|first|default:u.username|first|upper }}
+                </div>
+                <div>
+                  <div style="font-weight:700; color:var(--text-main);">{{ u.display_name }}</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;">
+                    {{ u.username }} &bull; {{ u.student_id|default:u.email }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td style="padding:0.85rem 1rem;">
+              <span class="badge" style="background:{% if u.role == 'admin' %}#fee2e2; color:#991b1b;{% elif u.role == 'staff' %}#fef3c7; color:#92400e;{% elif u.role == 'faculty' %}#e0e7ff; color:#3730a3;{% else %}#f1f5f9; color:#334155;{% endif %}">
+                {{ u.get_role_display }}
+              </span>
+            </td>
+            <td style="padding:0.85rem 1rem; color:var(--text-muted); font-size:0.8rem;">
+              {{ u.display_department }}
+            </td>
+            <td style="padding:0.85rem 1rem; text-align:center; font-family:monospace; font-weight:700; color:#1e40af;">
+              {{ u.reward_points|default:0 }}
+            </td>
+            <td style="padding:0.85rem 1rem; text-align:center;">
+              {% if u.is_active %}
+                <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Active</span>
+              {% else %}
+                <span class="badge badge-danger"><i class="fa-solid fa-circle-xmark"></i> Deactivated</span>
+              {% endif %}
+            </td>
+            <td style="padding:0.85rem 1rem; text-align:right;">
+              <a href="{% url 'security_dashboard:user_detail' u.pk %}" class="btn btn-secondary btn-sm" style="font-size:0.75rem;">
+                <i class="fa-solid fa-user-pen"></i> Inspect
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" style="text-align:center; padding:2.5rem; color:var(--text-muted);">
+              No campus users match the search criteria.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div style="display:flex; justify-content:center; gap:0.5rem; margin-top:1.5rem;">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&role={{ role_filter }}&status={{ status_filter }}" class="btn btn-secondary btn-sm">&laquo; Prev</a>
+  {% endif %}
+  <span style="font-size:0.85rem; color:var(--text-muted); align-self:center;">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&role={{ role_filter }}&status={{ status_filter }}" class="btn btn-secondary btn-sm">Next &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+

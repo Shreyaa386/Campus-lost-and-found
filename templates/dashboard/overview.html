@@ -1,0 +1,299 @@
+{% extends 'dashboard/base_admin.html' %}
+
+{% block title %}Executive Overview — Security Dashboard — CampusCare{% endblock %}
+
+{% block admin_extra_css %}
+<!-- Chart.js CDN for trend visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block admin_content %}
+<div style="margin-bottom: 1.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--text-main); margin: 0;">
+        Administrator & Security Overview
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
+        Campus recovery intelligence, active security flags, and item governance.
+      </p>
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+      <a href="{% url 'security_dashboard:exports' %}" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-file-arrow-down"></i> Export Report
+      </a>
+      <a href="{% url 'security_dashboard:heatmap' %}" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-fire"></i> Campus Heatmap
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- 8 Core KPI Cards Grid -->
+<div class="kpi-grid">
+  <!-- Students -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Total Students</div>
+      <div class="kpi-val">{{ kpis.total_students }}</div>
+      <div class="kpi-sub">{{ kpis.total_users }} total campus accounts</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background:#eff6ff; color:#2563eb;">
+      <i class="fa-solid fa-graduation-cap"></i>
+    </div>
+  </div>
+
+  <!-- Faculty & Staff -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Faculty & Staff</div>
+      <div class="kpi-val">{{ kpis.faculty_and_staff }}</div>
+      <div class="kpi-sub">Authorized monitors</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background:#f5f3ff; color:#7c3aed;">
+      <i class="fa-solid fa-user-tie"></i>
+    </div>
+  </div>
+
+  <!-- Lost Reports -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Lost Reports</div>
+      <div class="kpi-val" style="color:#ef4444;">{{ kpis.lost_reports }}</div>
+      <div class="kpi-sub">Reported missing</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background:#fef2f2; color:#ef4444;">
+      <i class="fa-solid fa-circle-exclamation"></i>
+    </div>
+  </div>
+
+  <!-- Found Reports -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Found Reports</div>
+      <div class="kpi-val" style="color:#10b981;">{{ kpis.found_reports }}</div>
+      <div class="kpi-sub">Turned in by finders</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background:#ecfdf5; color:#10b981;">
+      <i class="fa-solid fa-hand-holding-heart"></i>
+    </div>
+  </div>
+
+  <!-- Pending Claims -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Pending Claims</div>
+      <div class="kpi-val" style="color:#f59e0b;">{{ kpis.pending_claims }}</div>
+      <div class="kpi-sub">{{ kpis.approved_claims }} approved &bull; {{ kpis.rejected_claims }} rejected</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background:#fffbeb; color:#f59e0b;">
+      <i class="fa-solid fa-clipboard-question"></i>
+    </div>
+  </div>
+
+  <!-- Recovered Items -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Recovered Items</div>
+      <div class="kpi-val" style="color:#059669;">{{ kpis.recovered_items }}</div>
+      <div class="kpi-sub">{{ kpis.recovery_rate }}% resolution rate</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background:#ecfdf5; color:#059669;">
+      <i class="fa-solid fa-certificate"></i>
+    </div>
+  </div>
+
+  <!-- Unclaimed Items -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Unclaimed Items</div>
+      <div class="kpi-val" style="color:#6366f1;">{{ kpis.unclaimed_items }}</div>
+      <div class="kpi-sub">Active in lost & found desk</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background:#eef2ff; color:#6366f1;">
+      <i class="fa-solid fa-box-open"></i>
+    </div>
+  </div>
+
+  <!-- Suspicious Activity & Rewards -->
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-label">Security Alerts</div>
+      <div class="kpi-val" style="color:{% if kpis.active_alerts > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+        {{ kpis.active_alerts }}
+      </div>
+      <div class="kpi-sub">{{ kpis.reward_points_issued }} citizenship pts issued</div>
+    </div>
+    <div class="kpi-icon-wrap" style="background:{% if kpis.active_alerts > 0 %}#fef2f2{% else %}#f0fdf4{% endif %}; color:{% if kpis.active_alerts > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Active Security Alerts Banner (if any) -->
+{% if active_alerts %}
+<div class="card mb-4" style="border:1.5px solid #fecaca; background:#fff5f5; margin-bottom:1.5rem; padding:1.25rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+    <h3 style="font-size:1rem; font-weight:700; color:#991b1b; display:flex; align-items:center; gap:0.5rem; margin:0;">
+      <i class="fa-solid fa-triangle-exclamation text-red-600"></i> Active Security Monitoring Alerts ({{ alerts_summary.total_pending }})
+    </h3>
+    <a href="{% url 'security_dashboard:security_alerts' %}" class="btn btn-secondary btn-sm" style="background:#fff; color:#991b1b;">
+      View All Alerts <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:0.5rem;">
+    {% for alert in active_alerts %}
+      <div style="background:#fff; border:1px solid #fee2e2; border-radius:var(--radius-sm); padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span class="badge" style="background:{% if alert.severity == 'critical' %}#fee2e2; color:#991b1b;{% else %}#fef3c7; color:#92400e;{% endif %} font-size:0.7rem; margin-right:0.5rem;">
+            {{ alert.get_severity_display }}
+          </span>
+          <strong style="font-size:0.875rem; color:#1f2937;">{{ alert.title }}</strong>
+          <span style="font-size:0.775rem; color:#6b7280; display:block; margin-top:0.2rem;">{{ alert.description }}</span>
+        </div>
+        <a href="{% url 'security_dashboard:security_alerts' %}?type={{ alert.alert_type }}" class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:0.25rem 0.6rem;">
+          Investigate
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Trends & Recent Activity Grid -->
+<div style="display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+  <!-- Monthly Trend Chart -->
+  <div class="card p-4">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem; margin-bottom:1rem;">
+      <h3 style="font-size:1rem; font-weight:700; color:var(--text-main); margin:0;">
+        <i class="fa-solid fa-chart-line text-blue-600"></i> Monthly Recovery Trends (6 Months)
+      </h3>
+      <span class="text-xs text-gray-500 font-mono">Lost vs Found vs Recovered</span>
+    </div>
+    <div style="position:relative; height:240px; width:100%;">
+      <canvas id="monthlyTrendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Unclaimed Items Hotlist -->
+  <div class="card p-4">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem; margin-bottom:1rem;">
+      <h3 style="font-size:0.95rem; font-weight:700; color:var(--text-main); margin:0;">
+        <i class="fa-solid fa-box-open text-amber-500"></i> Unclaimed Found Items
+      </h3>
+      <a href="{% url 'security_dashboard:items' %}?type=found&status=open" class="text-xs text-blue-600 hover:underline">All</a>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.6rem; font-size:0.825rem;">
+      {% for item in unclaimed_sample %}
+        <div style="padding:0.5rem; border-radius:var(--radius-sm); background:#f8fafc; border:1px solid var(--border-color);">
+          <div style="font-weight:700; color:var(--text-main);">{{ item.title }}</div>
+          <div style="font-size:0.75rem; color:var(--text-muted); display:flex; justify-content:space-between; margin-top:0.2rem;">
+            <span>{{ item.location.name|default:"Campus" }}</span>
+            <span>{{ item.created_at|date:"M d" }}</span>
+          </div>
+        </div>
+      {% empty %}
+        <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
+          No overdue unclaimed items.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Recent Immutable Audit Trail -->
+<div class="card p-4">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem; margin-bottom:1rem;">
+    <h3 style="font-size:1rem; font-weight:700; color:var(--text-main); margin:0;">
+      <i class="fa-solid fa-clock-rotate-left text-gray-600"></i> Recent Administrative & Security Audit Trail
+    </h3>
+    <a href="{% url 'security_dashboard:audit_logs' %}" class="btn btn-secondary btn-sm">
+      View Complete Log <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table" style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left; border-bottom:1.5px solid var(--border-color); color:var(--text-muted); font-size:0.75rem; text-transform:uppercase;">
+          <th style="padding:0.6rem 0.75rem;">Timestamp</th>
+          <th style="padding:0.6rem 0.75rem;">Actor</th>
+          <th style="padding:0.6rem 0.75rem;">Action</th>
+          <th style="padding:0.6rem 0.75rem;">Target Reference</th>
+          <th style="padding:0.6rem 0.75rem;">IP Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in recent_audits %}
+          <tr style="border-bottom:1px solid var(--border-color);">
+            <td style="padding:0.6rem 0.75rem; font-family:monospace; color:var(--text-muted);">{{ log.timestamp|date:"M d, H:i:s" }}</td>
+            <td style="padding:0.6rem 0.75rem; font-weight:600;">{{ log.actor.username|default:"System Engine" }}</td>
+            <td style="padding:0.6rem 0.75rem;">
+              <span class="badge" style="background:#f1f5f9; color:#334155; font-size:0.725rem;">
+                {{ log.get_action_display }}
+              </span>
+            </td>
+            <td style="padding:0.6rem 0.75rem; color:var(--text-main);">{{ log.target_repr|truncatechars:45 }}</td>
+            <td style="padding:0.6rem 0.75rem; font-family:monospace; color:var(--text-light); font-size:0.75rem;">{{ log.ip_address|default:"127.0.0.1" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-muted);">No audit entries logged yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ctx = document.getElementById('monthlyTrendChart');
+  if (ctx) {
+    const labels = {{ monthly_trends.labels|safe }};
+    const lostData = {{ monthly_trends.lost_series|safe }};
+    const foundData = {{ monthly_trends.found_series|safe }};
+    const recoveredData = {{ monthly_trends.recovered_series|safe }};
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Lost Items',
+            data: lostData,
+            backgroundColor: '#ef4444',
+            borderRadius: 4
+          },
+          {
+            label: 'Found Items',
+            data: foundData,
+            backgroundColor: '#3b82f6',
+            borderRadius: 4
+          },
+          {
+            label: 'Recovered Items',
+            data: recoveredData,
+            backgroundColor: '#10b981',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+

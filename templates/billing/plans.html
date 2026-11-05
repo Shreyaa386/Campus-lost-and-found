@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Institutional Subscription Plans — CampusCare{% endblock %}
+
+{% block extra_css %}
+<style>
+  .plans-container {
+    max-width: 1100px;
+    margin: 2.5rem auto 4rem auto;
+  }
+  .plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  .plan-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 2rem 1.75rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: var(--transition);
+    position: relative;
+  }
+  .plan-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+  }
+  .plan-card.highlight {
+    border: 2px solid var(--primary);
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.15);
+  }
+  .plan-badge {
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: var(--primary);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .price-tag {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 1rem 0 0.5rem 0;
+  }
+  .price-period {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+  }
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+  .feature-item.included i {
+    color: #16a34a;
+  }
+  .feature-item.excluded {
+    color: #94a3b8;
+  }
+  .feature-item.excluded i {
+    color: #cbd5e1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container plans-container">
+  <div style="text-align: center; max-width: 680px; margin: 0 auto;">
+    <span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.8rem; padding:0.35rem 0.85rem; font-weight:700;">
+      INSTITUTIONAL LICENSING
+    </span>
+    <h1 style="font-size: 2.25rem; font-weight: 800; color: var(--text-main); margin: 0.75rem 0 0.5rem 0;">
+      Predictable Plans for Campus Lost & Found
+    </h1>
+    <p style="color: var(--text-muted); font-size: 1rem; margin: 0;">
+      Empower campus security and student affairs with intelligent matching, multi-facility governance, and AI-assisted workflows.
+    </p>
+
+    {% if institution %}
+      <div style="margin-top: 1rem; font-size: 0.85rem; color: #475569;">
+        Currently configuring for: <strong>{{ institution.name }}</strong>
+        {% if current_sub %}
+          • Active Plan: <span class="badge badge-success">{{ current_sub.plan.name }}</span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="plans-grid">
+    {% for plan in plans %}
+      <div class="plan-card {% if plan.code == 'pro' %}highlight{% endif %}">
+        {% if plan.code == 'pro' %}
+          <div class="plan-badge">Most Popular</div>
+        {% elif current_sub and current_sub.plan.code == plan.code %}
+          <div class="plan-badge" style="background: #16a34a;">Current Plan</div>
+        {% endif %}
+
+        <div>
+          <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin: 0;">
+            {{ plan.name }}
+          </h3>
+          <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0.35rem 0 0 0; min-height: 2.4rem;">
+            {{ plan.description|default:"Comprehensive campus lost & found tools." }}
+          </p>
+
+          <div class="price-tag">
+            {% if plan.price_monthly == 0 %}
+              Free
+            {% else %}
+              ₹{{ plan.price_monthly|floatformat:0 }}<span class="price-period"> / month</span>
+            {% endif %}
+          </div>
+          {% if plan.price_annual > 0 %}
+            <div style="font-size: 0.75rem; color: #16a34a; font-weight: 600;">
+              or ₹{{ plan.price_annual|floatformat:0 }} billed annually (save 20%)
+            </div>
+          {% endif %}
+
+          <ul class="feature-list">
+            <li class="feature-item included">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>Up to <strong>{{ plan.max_active_items }}</strong> active item reports</span>
+            </li>
+            <li class="feature-item included">
+              <i class="fa-solid fa-circle-check"></i>
+              <span><strong>{{ plan.max_staff_accounts }}</strong> Staff & Admin seats</span>
+            </li>
+            <li class="feature-item {% if plan.ai_chatbot_enabled %}included{% else %}excluded{% endif %}">
+              <i class="fa-solid {% if plan.ai_chatbot_enabled %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+              <span>AI Conversational Assistant</span>
+            </li>
+            <li class="feature-item {% if plan.predictive_analytics_enabled %}included{% else %}excluded{% endif %}">
+              <i class="fa-solid {% if plan.predictive_analytics_enabled %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+              <span>Predictive Trend Analytics</span>
+            </li>
+            <li class="feature-item {% if plan.custom_domain_enabled %}included{% else %}excluded{% endif %}">
+              <i class="fa-solid {% if plan.custom_domain_enabled %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+              <span>Custom Campus Domain SSL</span>
+            </li>
+            <li class="feature-item {% if plan.erp_integration_enabled %}included{% else %}excluded{% endif %}">
+              <i class="fa-solid {% if plan.erp_integration_enabled %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+              <span>College ERP / SIS Directory Sync</span>
+            </li>
+            <li class="feature-item {% if plan.sms_whatsapp_notifications_enabled %}included{% else %}excluded{% endif %}">
+              <i class="fa-solid {% if plan.sms_whatsapp_notifications_enabled %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+              <span>SMS & WhatsApp Notifications</span>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          {% if current_sub and current_sub.plan.code == plan.code %}
+            <button class="btn btn-outline" style="width: 100%;" disabled>
+              <i class="fa-solid fa-check"></i> Active Plan
+            </button>
+          {% elif user.is_staff_member %}
+            <a href="{% url 'initiate_checkout' plan.code %}" class="btn {% if plan.code == 'pro' %}btn-primary{% else %}btn-outline{% endif %}" style="width: 100%; text-align: center;">
+              {% if plan.price_monthly == 0 %}Select Free Tier{% else %}Upgrade to {{ plan.name }}{% endif %}
+            </a>
+          {% else %}
+            <a href="{% url 'items:home' %}" class="btn btn-outline" style="width: 100%; text-align: center;">
+              Included for Students
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Enterprise Callout -->
+  <div class="card mt-4 p-4" style="background:#f8fafc; border:1px solid var(--border-color); border-radius:var(--radius-md); margin-top:3rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1.5rem;">
+      <div>
+        <h4 style="font-size:1.1rem; font-weight:700; color:var(--text-main); margin:0 0 0.25rem 0;">
+          Need a Custom Multi-Campus University Consortium Contract?
+        </h4>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">
+          Dedicated cloud instance, SAML SSO integration, and custom physical IoT locker drop-box hardware.
+        </p>
+      </div>
+      <div>
+        <a href="mailto:partnerships@campuscare.edu" class="btn btn-outline" style="font-size:0.85rem;">
+          <i class="fa-solid fa-envelope"></i> Contact Enterprise Sales
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

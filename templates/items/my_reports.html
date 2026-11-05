@@ -1,0 +1,618 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Reports — CampusCare{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Dedicated My Reports Page Styles */
+.my-reports-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.reports-header-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.75rem 2rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.reports-heading {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.35rem 0;
+}
+
+.reports-subheading {
+  font-size: 0.925rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.reports-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* 4 Top KPI Cards Grid */
+.reports-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+  width: 100%;
+}
+
+.reports-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  min-width: 0;
+}
+
+.reports-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.06);
+}
+
+.reports-kpi-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.reports-kpi-value {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.reports-kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.kpi-icon-total { background: #eff6ff; color: #2563eb; }
+.kpi-icon-active { background: #fef2f2; color: #ef4444; }
+.kpi-icon-claims { background: #fef3c7; color: #d97706; }
+.kpi-icon-recovered { background: #ecfdf5; color: #10b981; }
+
+/* Filter & Search Bar */
+.reports-filter-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 1.75rem;
+}
+
+.reports-filter-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+/* Reports Table Card */
+.reports-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.reports-table-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.reports-table-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.my-reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  min-width: 860px;
+}
+
+.my-reports-table th {
+  background: #f8fafc;
+  padding: 0.95rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.my-reports-table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.875rem;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.my-reports-table tr:hover td {
+  background: #fbfdff;
+}
+
+.item-title-link {
+  font-weight: 700;
+  color: #0f172a;
+  text-decoration: none;
+  transition: color 0.2s;
+  display: block;
+}
+
+.item-title-link:hover {
+  color: #2563eb;
+}
+
+.item-code-badge {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 0.2rem;
+}
+
+.actions-cell-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.btn-action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-action-icon:hover {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.btn-action-view {
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #2563eb;
+  padding: 0 0.75rem;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+}
+
+.btn-action-view:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+/* Empty State */
+.reports-empty-box {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.reports-empty-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.85rem;
+  color: #94a3b8;
+  margin-bottom: 1.25rem;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1200px) {
+  .reports-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reports-filter-form {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .reports-header-banner {
+    padding: 1.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .reports-filter-form {
+    grid-template-columns: 1fr;
+  }
+  .reports-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .reports-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="my-reports-wrapper">
+  <!-- 1. Page Header Banner -->
+  <div class="reports-header-banner">
+    <div>
+      <h1 class="reports-heading">My Reports</h1>
+      <p class="reports-subheading">
+        Manage and track the lost and found items you have reported across campus.
+      </p>
+    </div>
+    <div class="reports-header-actions">
+      <a href="{% url 'items:report_item' 'lost' %}" class="btn btn-lost btn-sm">
+        <i class="fa-solid fa-plus"></i> Report Lost Item
+      </a>
+      <a href="{% url 'items:report_item' 'found' %}" class="btn btn-found btn-sm">
+        <i class="fa-solid fa-plus"></i> Report Found Item
+      </a>
+    </div>
+  </div>
+
+  <!-- 2. Four KPI Metric Cards -->
+  <div class="reports-kpi-grid">
+    <!-- Total Reports -->
+    <div class="reports-kpi-card">
+      <div>
+        <div class="reports-kpi-title">Total Reports</div>
+        <div class="reports-kpi-value">{{ stats.total_reports }}</div>
+      </div>
+      <div class="reports-kpi-icon kpi-icon-total">
+        <i class="fa-solid fa-folder-open"></i>
+      </div>
+    </div>
+
+    <!-- Active Reports -->
+    <div class="reports-kpi-card">
+      <div>
+        <div class="reports-kpi-title">Active Reports</div>
+        <div class="reports-kpi-value">{{ stats.active_reports }}</div>
+      </div>
+      <div class="reports-kpi-icon kpi-icon-active">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+      </div>
+    </div>
+
+    <!-- Pending Claims -->
+    <div class="reports-kpi-card">
+      <div>
+        <div class="reports-kpi-title">Pending Claims</div>
+        <div class="reports-kpi-value">{{ stats.pending_claims }}</div>
+      </div>
+      <div class="reports-kpi-icon kpi-icon-claims">
+        <i class="fa-solid fa-id-card-clip"></i>
+      </div>
+    </div>
+
+    <!-- Recovered Items -->
+    <div class="reports-kpi-card">
+      <div>
+        <div class="reports-kpi-title">Recovered Items</div>
+        <div class="reports-kpi-value">{{ stats.recovered_items }}</div>
+      </div>
+      <div class="reports-kpi-icon kpi-icon-recovered">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Search and Filters Card -->
+  <div class="reports-filter-card">
+    <form method="get" action="{% url 'items:my_reports' %}" class="reports-filter-form">
+      <!-- Search Keyword -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #475569;">Search Reports</label>
+        <div style="position: relative;">
+          <input 
+            type="text" 
+            name="q" 
+            value="{{ q }}" 
+            placeholder="Search by title, reference code, description..." 
+            class="form-input" 
+            style="width: 100%; border-radius: 10px;"
+          />
+        </div>
+      </div>
+
+      <!-- Type Filter -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #475569;">Report Type</label>
+        <select name="type" class="form-select" style="width: 100%; border-radius: 10px;">
+          <option value="">All Types (Lost &amp; Found)</option>
+          <option value="lost" {% if selected_type == 'lost' %}selected{% endif %}>Lost Items</option>
+          <option value="found" {% if selected_type == 'found' %}selected{% endif %}>Found Items</option>
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #475569;">Status</label>
+        <select name="status" class="form-select" style="width: 100%; border-radius: 10px;">
+          <option value="">All Statuses</option>
+          {% for code, label in status_choices %}
+            <option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Sort Filter -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #475569;">Sort By</label>
+        <select name="sort" class="form-select" style="width: 100%; border-radius: 10px;">
+          <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Newest Reported</option>
+          <option value="created_at" {% if selected_sort == 'created_at' %}selected{% endif %}>Oldest Reported</option>
+          <option value="-date_lost_or_found" {% if selected_sort == '-date_lost_or_found' %}selected{% endif %}>Event Date (Recent)</option>
+        </select>
+      </div>
+
+      <!-- Submit & Reset -->
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn-primary" style="height: 42px; border-radius: 10px; padding: 0 1.25rem;">
+          <i class="fa-solid fa-filter"></i> Filter
+        </button>
+        {% if q or selected_type or selected_status or selected_sort != '-created_at' %}
+          <a href="{% url 'items:my_reports' %}" class="btn btn-secondary" style="height: 42px; border-radius: 10px;" title="Reset Filters">
+            <i class="fa-solid fa-rotate-left"></i>
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- 4. Reports Table / Cards Card -->
+  <div class="reports-table-card">
+    <div class="reports-table-header">
+      <h2 class="reports-table-title">Your Reported Belongings</h2>
+      <span style="font-size: 0.85rem; color: #64748b;">
+        Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ page_obj.paginator.count|default:0 }} reports
+      </span>
+    </div>
+
+    {% if page_obj.object_list %}
+      <div class="table-responsive-wrapper">
+        <table class="my-reports-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Type</th>
+              <th>Category</th>
+              <th>Campus Location</th>
+              <th>Reported Date</th>
+              <th>Status</th>
+              <th>Claims</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for itm in page_obj %}
+              <tr>
+                <!-- Item title & thumbnail -->
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.85rem;">
+                    <div style="width: 44px; height: 44px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; color: #2563eb; overflow: hidden; flex-shrink: 0;">
+                      {% if itm.image %}
+                        <img src="{{ itm.image.url }}" alt="{{ itm.title }}" style="width: 100%; height: 100%; object-fit: cover;" />
+                      {% else %}
+                        <i class="fa-solid {{ itm.category.icon|default:'fa-box' }}"></i>
+                      {% endif %}
+                    </div>
+                    <div>
+                      <a href="{% url 'items:item_detail' itm.pk %}" class="item-title-link">
+                        {{ itm.title }}
+                      </a>
+                      <span class="item-code-badge">{{ itm.item_code|default:"CC-ITEM" }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Type -->
+                <td>
+                  {% if itm.report_type == 'lost' %}
+                    <span class="badge badge-lost"><i class="fa-solid fa-circle-exclamation"></i> Lost</span>
+                  {% else %}
+                    <span class="badge badge-found"><i class="fa-solid fa-hand-holding-heart"></i> Found</span>
+                  {% endif %}
+                </td>
+
+                <!-- Category -->
+                <td>
+                  <span style="font-size: 0.85rem; color: #475569;">
+                    <i class="fa-solid {{ itm.category.icon|default:'fa-tag' }}" style="color: #64748b; margin-right: 4px;"></i>
+                    {{ itm.category.name|default:"General" }}
+                  </span>
+                </td>
+
+                <!-- Location -->
+                <td>
+                  <span style="font-size: 0.85rem; color: #475569;">
+                    <i class="fa-solid fa-location-dot" style="color: #ef4444; margin-right: 4px;"></i>
+                    {{ itm.location.name|default:"Campus Premises" }}
+                  </span>
+                </td>
+
+                <!-- Reported Date -->
+                <td>
+                  <span style="font-size: 0.825rem; color: #64748b;">
+                    {{ itm.created_at|date:"M d, Y" }}
+                  </span>
+                </td>
+
+                <!-- Status -->
+                <td>
+                  <span class="badge badge-{{ itm.status }}">
+                    {{ itm.get_status_display }}
+                  </span>
+                </td>
+
+                <!-- Claims -->
+                <td>
+                  {% with claim_count=itm.claims.count %}
+                    {% if claim_count > 0 %}
+                      <a href="{% url 'items:item_detail' itm.pk %}#claimsSection" class="badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; text-decoration:none;">
+                        <i class="fa-solid fa-id-card"></i> {{ claim_count }} claim{{ claim_count|pluralize }}
+                      </a>
+                    {% else %}
+                      <span style="font-size: 0.775rem; color: #94a3b8;">None</span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+
+                <!-- Actions -->
+                <td>
+                  <div class="actions-cell-wrapper">
+                    <a href="{% url 'items:item_detail' itm.pk %}" class="btn-action-view" title="View Report">
+                      View
+                    </a>
+                    {% if itm.can_edit %}
+                      <a href="{% url 'items:item_edit' itm.pk %}" class="btn-action-icon" title="Edit Report">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </a>
+                    {% endif %}
+                    <a href="{% url 'items:item_tag' itm.pk %}" class="btn-action-icon" title="Print Item Tag">
+                      <i class="fa-solid fa-tag"></i>
+                    </a>
+                    <a href="{% url 'items:recovery_timeline' itm.pk %}" class="btn-action-icon" title="Recovery Timeline">
+                      <i class="fa-solid fa-timeline"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if page_obj.has_other_pages %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-top: 1px solid #f1f5f9; flex-wrap: wrap; gap: 1rem;">
+          <div style="font-size: 0.85rem; color: #64748b;">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            {% if page_obj.has_previous %}
+              <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-chevron-left"></i> Previous
+              </a>
+            {% endif %}
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" class="btn btn-secondary btn-sm">
+                Next <i class="fa-solid fa-chevron-right"></i>
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <!-- Empty State -->
+      <div class="reports-empty-box">
+        <div class="reports-empty-icon">
+          <i class="fa-solid fa-folder-open"></i>
+        </div>
+        {% if q or selected_type or selected_status %}
+          <h3 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">No Reports Found</h3>
+          <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 1.5rem;">
+            No reports match your current filter criteria. Try adjusting your search query or reset filters.
+          </p>
+          <a href="{% url 'items:my_reports' %}" class="btn btn-secondary">
+            <i class="fa-solid fa-rotate-left"></i> Reset Filters
+          </a>
+        {% else %}
+          <h3 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">You haven't reported any items yet</h3>
+          <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+            When you lose an item or find something on campus, log a report here to track verification and recovery.
+          </p>
+          <div style="display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'items:report_item' 'lost' %}" class="btn btn-lost">
+              <i class="fa-solid fa-plus"></i> Report a Lost Item
+            </a>
+            <a href="{% url 'items:report_item' 'found' %}" class="btn btn-found">
+              <i class="fa-solid fa-plus"></i> Report a Found Item
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

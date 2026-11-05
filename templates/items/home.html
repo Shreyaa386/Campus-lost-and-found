@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}CampusCare — Smart Campus Lost & Found{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="container hero-content">
+    <h1 class="hero-title">Misplaced Something on Campus?</h1>
+    <p class="hero-subtitle">
+      Connect with campus peers, faculty, and security to quickly recover lost valuables or hand over found belongings.
+    </p>
+
+    <!-- Quick Action Buttons -->
+    <div class="hero-actions">
+      <a href="{% url 'items:report_item' 'lost' %}" class="btn btn-lost btn-lg">
+        <i class="fa-solid fa-circle-exclamation"></i> I Lost Something
+      </a>
+      <a href="{% url 'items:report_item' 'found' %}" class="btn btn-found btn-lg">
+        <i class="fa-solid fa-hand-holding-heart"></i> I Found Something
+      </a>
+    </div>
+
+    <!-- Hero Search Bar -->
+    <form action="{% url 'items:lost_items' %}" method="get" class="search-bar-hero">
+      <input type="text" name="q" placeholder="Search for keys, ID cards, blue laptop, water bottle..." aria-label="Search items">
+      <button type="submit" class="btn btn-primary" style="border-radius: var(--radius-full); padding: 0.75rem 1.75rem;">
+        <i class="fa-solid fa-magnifying-glass"></i> Search
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- Live Campus Statistics -->
+<section class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-blue">
+      <i class="fa-solid fa-clipboard-list"></i>
+    </div>
+    <div>
+      <div class="stat-number">{{ total_reported }}</div>
+      <div class="stat-label">Total Reports Logged</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-green">
+      <i class="fa-solid fa-circle-check"></i>
+    </div>
+    <div>
+      <div class="stat-number">{{ total_returned }}</div>
+      <div class="stat-label">Items Returned to Owners</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-red">
+      <i class="fa-solid fa-circle-question"></i>
+    </div>
+    <div>
+      <div class="stat-number">{{ active_lost }}</div>
+      <div class="stat-label">Active Lost Items</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-purple">
+      <i class="fa-solid fa-box-archive"></i>
+    </div>
+    <div>
+      <div class="stat-number">{{ active_found }}</div>
+      <div class="stat-label">Active Found Items</div>
+    </div>
+  </div>
+</section>
+
+<!-- Categories Section -->
+<section style="margin-bottom: 3.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1.25rem;">
+    <div>
+      <h2 style="font-size:1.5rem; font-weight:800; color:var(--text-main);">Browse by Category</h2>
+      <p style="color:var(--text-muted); font-size:0.95rem;">Quickly narrow down reports by item type</p>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:1rem;">
+    {% for cat in categories %}
+      <a href="{% url 'items:lost_items' %}?category={{ cat.id }}" class="card" style="padding:1.25rem 0.75rem; text-align:center; text-decoration:none; color:inherit; transition:var(--transition);">
+        <div style="font-size:1.75rem; color:var(--primary); margin-bottom:0.5rem;">
+          <i class="fa-solid {{ cat.icon|default:'fa-box' }}"></i>
+        </div>
+        <div style="font-size:0.875rem; font-weight:700; color:var(--text-main);">{{ cat.name }}</div>
+        <div style="font-size:0.775rem; color:var(--text-muted); margin-top:0.25rem;">{{ cat.items_count }} active</div>
+      </a>
+    {% empty %}
+      <p style="color:var(--text-muted);">No categories available.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Recent Lost Items Preview -->
+<section style="margin-bottom: 3.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+    <div>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <span class="badge badge-lost"><i class="fa-solid fa-circle-exclamation"></i> Lost Items</span>
+        <h2 style="font-size:1.5rem; font-weight:800; color:var(--text-main); margin:0;">Recently Lost on Campus</h2>
+      </div>
+      <p style="color:var(--text-muted); font-size:0.95rem; margin-top:0.2rem;">Help peers find their missing possessions</p>
+    </div>
+    <a href="{% url 'items:lost_items' %}" class="btn btn-secondary btn-sm">
+      View All Lost <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </div>
+
+  <div class="items-grid">
+    {% for item in recent_lost %}
+      <div class="card item-card">
+        <div class="item-thumb-wrapper">
+          <span class="badge badge-lost item-floating-badge">Lost</span>
+          <span class="badge badge-{{ item.status }} item-status-pill">{{ item.get_status_display }}</span>
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.title }}">
+          {% else %}
+            <div class="item-placeholder-icon">
+              <i class="fa-solid {{ item.category.icon|default:'fa-box' }}"></i>
+            </div>
+          {% endif %}
+        </div>
+        <div class="item-info">
+          <div style="font-size:0.775rem; font-weight:600; color:var(--primary); margin-bottom:0.25rem;">
+            {{ item.category.name }}
+          </div>
+          <h3 class="item-title">
+            <a href="{% url 'items:item_detail' item.pk %}">{{ item.title }}</a>
+          </h3>
+          <p class="item-desc-snippet">{{ item.description }}</p>
+
+          <div class="item-meta-row">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>{{ item.location.name|default:"Campus Area" }}</span>
+          </div>
+          <div class="item-meta-row">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span>Lost on {{ item.date_lost_or_found|date:"M d, Y" }}</span>
+          </div>
+
+          <div style="margin-top:auto; padding-top:1rem; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.8rem; color:var(--text-muted);">
+              By {{ item.user.display_name|truncatechars:12 }}
+            </span>
+            <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-outline-primary btn-sm">
+              Details
+            </a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div style="grid-column: 1 / -1; padding: 2.5rem; text-align: center; background: #ffffff; border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+        <i class="fa-solid fa-face-smile" style="font-size: 2.5rem; color: #10b981; margin-bottom: 0.75rem;"></i>
+        <h3 style="font-weight: 700; color: var(--text-main);">No Lost Items Reported Right Now</h3>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Great news! Everything on campus is currently accounted for.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Recent Found Items Preview -->
+<section style="margin-bottom: 3.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+    <div>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <span class="badge badge-found"><i class="fa-solid fa-hand-holding-heart"></i> Found Items</span>
+        <h2 style="font-size:1.5rem; font-weight:800; color:var(--text-main); margin:0;">Recently Found on Campus</h2>
+      </div>
+      <p style="color:var(--text-muted); font-size:0.95rem; margin-top:0.2rem;">Claim items that were discovered by others</p>
+    </div>
+    <a href="{% url 'items:found_items' %}" class="btn btn-secondary btn-sm">
+      View All Found <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </div>
+
+  <div class="items-grid">
+    {% for item in recent_found %}
+      <div class="card item-card">
+        <div class="item-thumb-wrapper">
+          <span class="badge badge-found item-floating-badge">Found</span>
+          <span class="badge badge-{{ item.status }} item-status-pill">{{ item.get_status_display }}</span>
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.title }}">
+          {% else %}
+            <div class="item-placeholder-icon">
+              <i class="fa-solid {{ item.category.icon|default:'fa-box' }}"></i>
+            </div>
+          {% endif %}
+        </div>
+        <div class="item-info">
+          <div style="font-size:0.775rem; font-weight:600; color:var(--accent-found); margin-bottom:0.25rem;">
+            {{ item.category.name }}
+          </div>
+          <h3 class="item-title">
+            <a href="{% url 'items:item_detail' item.pk %}">{{ item.title }}</a>
+          </h3>
+          <p class="item-desc-snippet">{{ item.description }}</p>
+
+          <div class="item-meta-row">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>{{ item.location.name|default:"Campus Area" }}</span>
+          </div>
+          <div class="item-meta-row">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span>Found on {{ item.date_lost_or_found|date:"M d, Y" }}</span>
+          </div>
+
+          <div style="margin-top:auto; padding-top:1rem; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.8rem; color:var(--text-muted);">
+              Found by {{ item.user.display_name|truncatechars:12 }}
+            </span>
+            <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-outline-primary btn-sm">
+              Claim / Details
+            </a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div style="grid-column: 1 / -1; padding: 2.5rem; text-align: center; background: #ffffff; border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+        <i class="fa-solid fa-box-open" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 0.75rem;"></i>
+        <h3 style="font-weight: 700; color: var(--text-main);">No Found Items Reported Yet</h3>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Found an unattended item? Report it and earn campus reward points!</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- How It Works Section -->
+<section style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 3rem 2rem; margin-bottom: 2rem;">
+  <div style="text-align: center; max-width: 600px; margin: 0 auto 2.5rem;">
+    <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-main);">How CampusCare Works</h2>
+    <p style="color: var(--text-muted); font-size: 1rem;">Simple, safe, and transparent 3-step lost & found process</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2rem; text-align: center;">
+    <div>
+      <div style="width: 4rem; height: 4rem; background: #eff6ff; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1.25rem;">
+        <i class="fa-solid fa-pen-to-square"></i>
+      </div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">1. Report Details</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Fill out item title, location, date, and upload a clear picture. Choose whether your phone/email is shared or routed via Campus Desk.
+      </p>
+    </div>
+
+    <div>
+      <div style="width: 4rem; height: 4rem; background: #ecfdf5; color: var(--accent-found); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1.25rem;">
+        <i class="fa-solid fa-magnifying-glass-location"></i>
+      </div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">2. Search & Verify</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Filter by building, category, and date. Campus authentication ensures that only verified students and staff access contact info.
+      </p>
+    </div>
+
+    <div>
+      <div style="width: 4rem; height: 4rem; background: #f5f3ff; color: #8b5cf6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1.25rem;">
+        <i class="fa-solid fa-handshake-angle"></i>
+      </div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">3. Reconnect & Reward</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Meet safely at the campus helpdesk or agreed spot. Mark the item resolved and earn reward recognition for campus citizenship!
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

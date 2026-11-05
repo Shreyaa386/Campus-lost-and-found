@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Administrator & Security Suite — CampusCare{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-layout {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+  min-height: calc(100vh - 120px);
+}
+@media (max-width: 900px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+}
+.admin-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  .admin-sidebar {
+    width: 100%;
+  }
+}
+.admin-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.admin-menu-header {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color);
+}
+.admin-menu-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+.admin-menu-link:last-child {
+  border-bottom: none;
+}
+.admin-menu-link:hover {
+  background: #f1f5f9;
+  color: var(--primary);
+}
+.admin-menu-link.active {
+  background: #eff6ff;
+  color: var(--primary);
+  border-left: 3px solid var(--primary);
+}
+.admin-menu-link .menu-icon {
+  width: 1.25rem;
+  text-align: center;
+  margin-right: 0.65rem;
+}
+.admin-main {
+  flex: 1;
+  min-width: 0;
+}
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.kpi-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.kpi-val {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.1;
+  margin: 0.25rem 0;
+}
+.kpi-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.kpi-sub {
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+.kpi-icon-wrap {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+</style>
+{% block admin_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="container admin-layout">
+  <!-- Sidebar Navigation -->
+  <aside class="admin-sidebar">
+    <div class="card p-3 mb-3 bg-blue-900 text-white" style="background:#1e3a8a; color:#fff; border:none; padding:1rem; border-radius:var(--radius-md); margin-bottom:1rem;">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <div style="width:2.5rem; height:2.5rem; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <div>
+          <div style="font-weight:700; font-size:0.95rem;">Security Portal</div>
+          <div style="font-size:0.75rem; color:#93c5fd;">{{ user.get_role_display }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-menu">
+      <div class="admin-menu-header">Operations & Analytics</div>
+      
+      <a href="{% url 'security_dashboard:overview' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'overview' %}active{% endif %}">
+        <span><i class="fa-solid fa-gauge-high menu-icon text-blue-600"></i> Executive Overview</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:analytics' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+        <span><i class="fa-solid fa-chart-pie menu-icon text-indigo-600"></i> Analytics & Trends</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:predictions' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'predictions' %}active{% endif %}">
+        <span><i class="fa-solid fa-chart-line menu-icon text-pink-600"></i> Trend Predictions</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:institution_analytics' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'institution_analytics' %}active{% endif %}">
+        <span><i class="fa-solid fa-network-wired menu-icon text-purple-600"></i> Multi-Campus Overview</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:heatmap' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'heatmap' %}active{% endif %}">
+        <span><i class="fa-solid fa-fire menu-icon text-red-500"></i> Campus Heatmap</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:exports' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'exports' %}active{% endif %}">
+        <span><i class="fa-solid fa-file-arrow-down menu-icon text-green-600"></i> Download Reports</span>
+      </a>
+
+      <div class="admin-menu-header">Security & Governance</div>
+
+      <a href="{% url 'security_dashboard:security_alerts' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'security_alerts' %}active{% endif %}">
+        <span><i class="fa-solid fa-shield-halved menu-icon text-amber-500"></i> Security Alerts</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:claims' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'claims' or request.resolver_match.url_name == 'claim_detail' %}active{% endif %}">
+        <span><i class="fa-solid fa-file-signature menu-icon text-blue-500"></i> Claim Moderation</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:items' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'items' %}active{% endif %}">
+        <span><i class="fa-solid fa-box-archive menu-icon text-cyan-600"></i> Item Governance</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:users' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'users' or request.resolver_match.url_name == 'user_detail' %}active{% endif %}">
+        <span><i class="fa-solid fa-users-gear menu-icon text-purple-600"></i> User Management</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:audit_logs' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
+        <span><i class="fa-solid fa-clock-rotate-left menu-icon text-gray-600"></i> Audit Logs</span>
+      </a>
+
+      <div class="admin-menu-header">Campus Structure</div>
+
+      <a href="{% url 'security_dashboard:locations' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'locations' %}active{% endif %}">
+        <span><i class="fa-solid fa-location-dot menu-icon text-red-600"></i> Campus Locations</span>
+      </a>
+
+      <a href="{% url 'security_dashboard:categories' %}" class="admin-menu-link {% if request.resolver_match.url_name == 'categories' %}active{% endif %}">
+        <span><i class="fa-solid fa-tags menu-icon text-teal-600"></i> Categories</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Work Area -->
+  <main class="admin-main">
+    {% block admin_content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}
+

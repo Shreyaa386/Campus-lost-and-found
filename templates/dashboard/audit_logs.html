@@ -1,0 +1,158 @@
+{% extends 'dashboard/base_admin.html' %}
+
+{% block title %}Immutable Audit Trail — Security Dashboard — CampusCare{% endblock %}
+
+{% block admin_content %}
+<div style="margin-bottom: 1.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0;">
+        Immutable Audit Trail & System Logs
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
+        Cryptographically protected chronological log of all administrative actions, claim reviews, and account adjustments.
+      </p>
+    </div>
+    <span class="badge" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:0.4rem 0.8rem; font-size:0.8rem;">
+      <i class="fa-solid fa-lock"></i> Tamper-Resistant Record
+    </span>
+  </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card p-4 mb-4" style="margin-bottom:1.5rem;">
+  <form method="get" action="{% url 'security_dashboard:audit_logs' %}" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-end;">
+    <div style="flex:1; min-width:180px;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Action Type</label>
+      <select name="action" class="form-select" style="width:100%;">
+        <option value="">All Administrative Actions</option>
+        {% for a_val, a_label in actions %}
+          <option value="{{ a_val }}" {% if action_filter == a_val %}selected{% endif %}>{{ a_label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="flex:1; min-width:160px;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Actor Username</label>
+      <input type="text" name="actor" value="{{ actor_q }}" placeholder="e.g. security_admin..." class="form-input" style="width:100%;" />
+    </div>
+
+    <div style="flex:1; min-width:140px;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Target Entity</label>
+      <input type="text" name="model" value="{{ model_filter }}" placeholder="e.g. Item, Claim, User..." class="form-input" style="width:100%;" />
+    </div>
+
+    <div>
+      <button type="submit" class="btn btn-primary" style="height:2.45rem;">
+        <i class="fa-solid fa-filter"></i> Filter Logs
+      </button>
+      {% if action_filter or actor_q or model_filter %}
+        <a href="{% url 'security_dashboard:audit_logs' %}" class="btn btn-secondary" style="height:2.45rem;">Reset</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Audit Log Table -->
+<div class="card p-0" style="overflow:hidden;">
+  <div class="table-responsive">
+    <table class="table" style="width:100%; font-size:0.825rem; border-collapse:collapse;">
+      <thead style="background:#f8fafc; border-bottom:1.5px solid var(--border-color); text-transform:uppercase; font-size:0.725rem; color:var(--text-muted);">
+        <tr>
+          <th style="padding:0.75rem 1rem;">Timestamp</th>
+          <th style="padding:0.75rem 1rem;">Actor</th>
+          <th style="padding:0.75rem 1rem;">Action</th>
+          <th style="padding:0.75rem 1rem;">Target Entity & Summary</th>
+          <th style="padding:0.75rem 1rem;">IP Address</th>
+          <th style="padding:0.75rem 1rem; text-align:right;">Metadata</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in page_obj %}
+          <tr style="border-bottom:1px solid var(--border-color);">
+            <td style="padding:0.75rem 1rem; font-family:monospace; color:var(--text-muted); white-space:nowrap;">
+              {{ log.timestamp|date:"Y-m-d H:i:s" }}
+            </td>
+            <td style="padding:0.75rem 1rem;">
+              {% if log.actor %}
+                <div style="font-weight:700; color:var(--text-main);">{{ log.actor.username }}</div>
+                <div style="font-size:0.725rem; color:var(--text-muted);">{{ log.actor.get_role_display }}</div>
+              {% else %}
+                <span class="text-gray-400 italic">Automated Engine</span>
+              {% endif %}
+            </td>
+            <td style="padding:0.75rem 1rem;">
+              <span class="badge" style="background:#f1f5f9; color:#1e3a8a; font-size:0.725rem;">
+                {{ log.get_action_display }}
+              </span>
+            </td>
+            <td style="padding:0.75rem 1rem;">
+              {% if log.target_model %}
+                <span style="font-size:0.725rem; color:#6366f1; font-weight:700; text-transform:uppercase;">[{{ log.target_model }}]</span>
+              {% endif %}
+              <span style="color:var(--text-main); font-weight:600;">{{ log.target_repr|default:"—" }}</span>
+            </td>
+            <td style="padding:0.75rem 1rem; font-family:monospace; font-size:0.75rem; color:var(--text-light);">
+              {{ log.ip_address|default:"127.0.0.1" }}
+            </td>
+            <td style="padding:0.75rem 1rem; text-align:right;">
+              {% if log.details %}
+                <button type="button" onclick="showDetailsModal('{{ log.pk }}')" class="btn btn-secondary btn-sm" style="font-size:0.7rem; padding:0.2rem 0.5rem;">
+                  View Context
+                </button>
+                <div id="details-{{ log.pk }}" style="display:none;">{{ log.details }}</div>
+              {% else %}
+                <span style="color:var(--text-light); font-size:0.75rem;">None</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" style="text-align:center; padding:2.5rem; color:var(--text-muted);">
+              No audit log entries found matching criteria.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div style="display:flex; justify-content:center; gap:0.5rem; margin-top:1.5rem;">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&action={{ action_filter }}&actor={{ actor_q }}&model={{ model_filter }}" class="btn btn-secondary btn-sm">&laquo; Prev</a>
+  {% endif %}
+  <span style="font-size:0.85rem; color:var(--text-muted); align-self:center;">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&action={{ action_filter }}&actor={{ actor_q }}&model={{ model_filter }}" class="btn btn-secondary btn-sm">Next &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Modal for Viewing Metadata -->
+<div id="metadataModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; padding:1rem; z-index:999;">
+  <div style="background:#fff; border-radius:var(--radius-md); max-width:500px; width:100%; padding:1.5rem; box-shadow:var(--shadow-xl);">
+    <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.75rem;">Audit Context Metadata</h3>
+    <pre id="metadataContent" style="background:#f8fafc; border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:1rem; font-size:0.75rem; max-height:260px; overflow:auto; white-space:pre-wrap; word-break:break-all;"></pre>
+    <div style="display:flex; justify-content:flex-end; margin-top:1rem;">
+      <button type="button" onclick="closeMetadataModal()" class="btn btn-secondary btn-sm">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showDetailsModal(logId) {
+  const content = document.getElementById('details-' + logId).innerText;
+  document.getElementById('metadataContent').innerText = content;
+  document.getElementById('metadataModal').style.display = 'flex';
+}
+function closeMetadataModal() {
+  document.getElementById('metadataModal').style.display = 'none';
+}
+</script>
+{% endblock %}
+

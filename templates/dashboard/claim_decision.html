@@ -1,0 +1,177 @@
+{% extends 'dashboard/base_admin.html' %}
+
+{% block title %}Moderate Claim #{{ claim.pk }} — Security Dashboard{% endblock %}
+
+{% block admin_content %}
+<div style="margin-bottom: 1.5rem;">
+  <a href="{% url 'security_dashboard:claims' %}" class="btn btn-secondary btn-sm" style="margin-bottom:0.75rem;">
+    <i class="fa-solid fa-arrow-left"></i> Back to Claims Queue
+  </a>
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0;">
+        Claim Moderation #{{ claim.pk }}
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
+        Claimed Item: <strong>{{ claim.item.title }}</strong> &bull; Claimant: <strong>{{ claim.claimant.display_name
+          }}</strong>
+      </p>
+    </div>
+    <div>
+      <span class="badge badge-{{ claim.status }}" style="font-size:0.85rem; padding:0.4rem 0.8rem;">
+        {{ claim.get_status_display }}
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Competing Claims Warning (Multiple Claimants) -->
+{% if already_approved and already_approved != claim %}
+<div class="card mb-4" style="border:1.5px solid #fecaca; background:#fef2f2; padding:1.25rem; margin-bottom:1.5rem;">
+  <div style="display:flex; gap:0.75rem; align-items:flex-start;">
+    <i class="fa-solid fa-triangle-exclamation text-red-600 text-xl mt-0.5"></i>
+    <div>
+      <strong style="color:#991b1b; font-size:0.95rem;">Conflicting Ownership Decision Warning:</strong>
+      <p style="font-size:0.85rem; color:#b91c1c; margin:0.25rem 0 0;">
+        Claim #{{ already_approved.pk }} filed by <strong>{{ already_approved.claimant.display_name }}</strong> is
+        already APPROVED for this item.
+        CampusCare strictly prevents conflicting ownership approvals. You must revoke or reject the previous claim
+        before approving another claimant.
+      </p>
+    </div>
+  </div>
+</div>
+{% elif competing_claims %}
+<div class="card mb-4" style="border:1px solid #fed7aa; background:#fffbeb; padding:1rem; margin-bottom:1.5rem;">
+  <div style="display:flex; gap:0.75rem; align-items:center;">
+    <i class="fa-solid fa-users text-amber-600"></i>
+    <div style="font-size:0.85rem; color:#92400e;">
+      <strong>Multiple Claimants Detected:</strong> There are {{ competing_claims.count }} other ownership claim(s)
+      lodged for this same item.
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div style="display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+  <!-- Left: Submitted Evidence & Answers -->
+  <div class="space-y-4" style="display:flex; flex-direction:column; gap:1.25rem;">
+    <!-- Private Verification Answers -->
+    <div class="card p-4">
+      <h3
+        style="font-size:1rem; font-weight:700; color:var(--text-main); margin-bottom:0.75rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+        <i class="fa-solid fa-lock text-green-600"></i> Private Identifying Evidence
+      </h3>
+      <div
+        style="background:#f8fafc; padding:1rem; border-radius:var(--radius-sm); border:1px solid var(--border-color); font-size:0.9rem; line-height:1.6; white-space:pre-line;">
+        {{ claim.identifying_details }}
+      </div>
+
+      {% if claim.verification_answers %}
+      <div style="margin-top:1rem;">
+        <h4
+          style="font-size:0.85rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.5rem;">
+          Answers to Item Ownership Prompts:
+        </h4>
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+          {% for q_text, ans_text in claim.verification_answers.items %}
+          <div
+            style="padding:0.75rem; background:#ffffff; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-size:0.85rem;">
+            <div style="color:var(--text-muted); font-size:0.75rem; font-weight:600;">Prompt: {{ q_text }}</div>
+            <div style="font-weight:700; color:var(--text-main); margin-top:0.2rem;">Answer: {{ ans_text }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if claim.proof_image %}
+      <div style="margin-top:1.25rem; border-top:1px solid var(--border-color); padding-top:1rem;">
+        <h4
+          style="font-size:0.85rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.5rem;">
+          Uploaded Proof Document / Photograph
+        </h4>
+        <img src="{{ claim.proof_image.url }}" alt="Proof Image"
+          style="max-width:100%; max-height:360px; border-radius:var(--radius-sm); border:1px solid var(--border-color);" />
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Fraud Risk Profile -->
+    <div class="card p-4">
+      <h3
+        style="font-size:1rem; font-weight:700; color:var(--text-main); margin-bottom:0.75rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+        <i class="fa-solid fa-shield-halved text-blue-600"></i> Automated Risk & Velocity Analysis
+      </h3>
+      <div style="display:flex; align-items:center; gap:1rem; margin-bottom:0.75rem;">
+        <div
+          style="font-size:1.75rem; font-weight:800; font-family:monospace; color:{% if claim.fraud_risk_score >= 60 %}#dc2626{% elif claim.fraud_risk_score >= 30 %}#d97706{% else %}#16a34a{% endif %};">
+          {{ claim.fraud_risk_score }}<span style="font-size:0.9rem; color:var(--text-muted);">/100</span>
+        </div>
+        <div style="font-size:0.825rem; color:var(--text-muted);">
+          Calculated based on velocity, submission anomalies, and cross-report similarity.
+        </div>
+      </div>
+
+      {% if claim.fraud_risk_flags %}
+      <div style="display:flex; flex-direction:column; gap:0.4rem;">
+        {% for flag in claim.fraud_risk_flags %}
+        <div
+          style="padding:0.4rem 0.6rem; border-radius:var(--radius-sm); background:#fef2f2; border:1px solid #fecaca; font-size:0.8rem; color:#991b1b;">
+          <strong>{{ flag.rule }}:</strong> {{ flag.reason }}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="font-size:0.825rem; color:#15803d;">
+        <i class="fa-solid fa-check"></i> No suspicious risk indicators detected.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: Official Decision Panel -->
+  <div>
+    <div class="card p-4" style="background:#ffffff; border:1.5px solid #2563eb;">
+      <h3 style="font-size:1rem; font-weight:700; color:var(--text-main); margin-bottom:0.5rem;">
+        <i class="fa-solid fa-gavel text-blue-600"></i> Record Moderation Decision
+      </h3>
+      <p style="font-size:0.775rem; color:var(--text-muted); margin-bottom:1rem;">
+        Provide clear, auditable reasoning for approval or rejection. Decisions are permanently logged in the audit
+        trail.
+      </p>
+
+      <form method="post" action="{% url 'security_dashboard:claim_detail' claim.pk %}">
+        {% csrf_token %}
+        <div style="margin-bottom:1rem;">
+          <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:0.25rem;">
+            Decision Explanation (Mandatory)
+          </label>
+          <textarea name="decision_reason" rows="4" class="form-textarea" required
+            placeholder="Explain why this claim was approved or rejected (e.g. Serial number and front desk verification matched / Insufficient proof)...">{{ claim.decision_reason }}</textarea>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+          <button type="submit" name="action" value="approve" class="btn btn-found" {% if already_approved and
+            already_approved !=claim %}disabled style="opacity:0.5;" {% endif %}>
+            <i class="fa-solid fa-circle-check"></i> Approve & Verify Ownership
+          </button>
+          <button type="submit" name="action" value="reject" class="btn btn-lost">
+            <i class="fa-solid fa-circle-xmark"></i> Reject Claim
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Claim Meta Card -->
+    <div class="card p-4 mt-4" style="font-size:0.8rem; color:var(--text-muted); margin-top:1rem;">
+      <div style="font-weight:700; margin-bottom:0.5rem; color:var(--text-main);">Audit Meta</div>
+      <div>Submitted: {{ claim.created_at|date:"M d, Y H:i" }}</div>
+      {% if claim.reviewed_at %}
+      <div>Reviewed: {{ claim.reviewed_at|date:"M d, Y H:i" }}</div>
+      <div>Reviewed By: {{ claim.reviewed_by.display_name }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% load static %}
+<!-- 1. FIXED CLEAN PERMANENT LEFT SIDEBAR (~280px) -->
+<aside class="dashboard-sidebar" id="dashboardSidebar">
+  <!-- Brand / CampusCare Header -->
+  <div class="sidebar-brand-header">
+    <a href="{% url 'items:dashboard' %}" class="sidebar-brand-logo">
+      <div class="sidebar-brand-icon">
+        <i class="fa-solid fa-compass"></i>
+      </div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">CampusCare</span>
+        <span class="sidebar-brand-campus">{{ institution_short_name|default:user.institution.short_name|default:"LPU" }}</span>
+      </div>
+    </a>
+    <button class="sidebar-close-btn d-lg-none" id="sidebarCloseBtn" aria-label="Close sidebar">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- Grouped Navigation Menu: Main, Personal, Support -->
+  <nav class="sidebar-nav">
+    <!-- Group 1: MAIN -->
+    <div class="nav-group">
+      <div class="nav-group-title">MAIN</div>
+      <ul class="nav-group-list">
+        <li>
+          <a href="{% url 'items:dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' and not request.GET.tab %}active{% endif %}">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'items:lost_items' %}" class="sidebar-link {% if request.resolver_match.url_name == 'lost_items' %}active{% endif %}">
+            <i class="fa-solid fa-magnifying-glass-location" style="color: #ef4444;"></i>
+            <span>Lost Items</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'items:found_items' %}" class="sidebar-link {% if request.resolver_match.url_name == 'found_items' %}active{% endif %}">
+            <i class="fa-solid fa-box-open" style="color: #10b981;"></i>
+            <span>Found Items</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'items:report_item' 'lost' %}" class="sidebar-link {% if 'report/lost' in request.path %}active{% endif %}">
+            <i class="fa-solid fa-circle-exclamation" style="color: #ef4444;"></i>
+            <span>Report Lost</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'items:report_item' 'found' %}" class="sidebar-link {% if 'report/found' in request.path %}active{% endif %}">
+            <i class="fa-solid fa-hand-holding-heart" style="color: #10b981;"></i>
+            <span>Report Found</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'items:my_reports' %}" class="sidebar-link {% if request.resolver_match.url_name == 'my_reports' %}active{% endif %}">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>My Reports</span>
+            {% if stats.total %}
+              <span class="nav-badge">{{ stats.total }}</span>
+            {% elif sidebar_user_stats.reports_count %}
+              <span class="nav-badge">{{ sidebar_user_stats.reports_count }}</span>
+            {% endif %}
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'items:my_claims' %}" class="sidebar-link {% if request.resolver_match.url_name == 'my_claims' %}active{% endif %}">
+            <i class="fa-solid fa-file-signature"></i>
+            <span>My Claims</span>
+            {% if stats.claims_count %}
+              <span class="nav-badge">{{ stats.claims_count }}</span>
+            {% elif sidebar_user_stats.claims_count %}
+              <span class="nav-badge">{{ sidebar_user_stats.claims_count }}</span>
+            {% endif %}
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Group 2: PERSONAL -->
+    <div class="nav-group">
+      <div class="nav-group-title">PERSONAL</div>
+      <ul class="nav-group-list">
+        <li>
+          <a href="{% url 'items:recovery_history' %}" class="sidebar-link {% if request.resolver_match.url_name == 'recovery_history' or 'recovery' in request.path %}active{% endif %}">
+            <i class="fa-solid fa-receipt"></i>
+            <span>Recovery History</span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'items:rewards' %}" class="sidebar-link {% if request.resolver_match.url_name == 'rewards' or request.resolver_match.url_name == 'leaderboard' %}active{% endif %}">
+            <i class="fa-solid fa-award" style="color: #f59e0b;"></i>
+            <span>Rewards &amp; Points</span>
+            {% if stats.reward_points %}
+              <span class="nav-badge nav-badge-accent">{{ stats.reward_points }} pts</span>
+            {% elif sidebar_user_stats.reward_points %}
+              <span class="nav-badge nav-badge-accent">{{ sidebar_user_stats.reward_points }} pts</span>
+            {% endif %}
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'items:notifications' %}" class="sidebar-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+            <i class="fa-solid fa-bell"></i>
+            <span>Notifications</span>
+            {% if unread_notifications_count %}
+              <span class="nav-badge" style="background:#fee2e2; color:#ef4444;">{{ unread_notifications_count }}</span>
+            {% endif %}
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'accounts:profile' %}" class="sidebar-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+            <i class="fa-solid fa-user-gear"></i>
+            <span>My Profile</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Group 3: SUPPORT -->
+    <div class="nav-group">
+      <div class="nav-group-title">SUPPORT</div>
+      <ul class="nav-group-list">
+        <li>
+          <a href="{% url 'assistant' %}" class="sidebar-link {% if request.resolver_match.url_name == 'assistant' %}active{% endif %}">
+            <i class="fa-solid fa-robot" style="color: #2563eb;"></i>
+            <span>AI Guide</span>
+            <span class="nav-badge nav-badge-ai">AI</span>
+          </a>
+        </li>
+        <li>
+          <a href="mailto:lostandfound@lpu.in" class="sidebar-link">
+            <i class="fa-solid fa-headset"></i>
+            <span>Help &amp; Support</span>
+          </a>
+        </li>
+        {% if user.is_staff_member or user.is_superuser %}
+        <li>
+          <a href="{% url 'security_dashboard:overview' %}" class="sidebar-link {% if 'security-dashboard' in request.path %}active{% endif %}" style="color: #d97706; font-weight: 700;">
+            <i class="fa-solid fa-shield-halved" style="color: #d97706;"></i>
+            <span>Security Dashboard</span>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Sidebar Footer with User Card & Logout -->
+  <div class="sidebar-footer">
+    <div class="sidebar-user-card">
+      <a href="{% url 'accounts:profile' %}" class="sidebar-user-avatar" title="View Profile">
+        {% if user.profile_picture %}
+          <img src="{{ user.profile_picture.url }}" alt="{{ user.display_name }}">
+        {% else %}
+          {{ user.first_name|first|default:user.username|first|upper }}
+        {% endif %}
+      </a>
+      <a href="{% url 'accounts:profile' %}" class="sidebar-user-info" title="View Profile" style="text-decoration:none;">
+        <div class="sidebar-user-name">{{ user.get_full_name|default:user.display_name }}</div>
+        <div class="sidebar-user-role">{{ user.get_role_display|default:"Student" }}</div>
+      </a>
+      <form action="{% url 'accounts:logout' %}" method="post" style="display:inline; margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-logout-btn" title="Sign Out" onclick="return confirm('Are you sure you want to sign out?');">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</aside>
+

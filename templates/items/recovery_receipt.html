@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Recovery Receipt #{{ receipt.receipt_number }} — CampusCare{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .navbar, footer, .no-print, .alert {
+    display: none !important;
+  }
+  .receipt-container {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-8 max-w-3xl mx-auto">
+  <!-- Header Bar with Print Button -->
+  <div class="flex items-center justify-between mb-6 no-print">
+    <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Item
+    </a>
+    <div class="flex items-center gap-3">
+      <a href="{% url 'items:recovery_timeline' item.pk %}" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-timeline"></i> Timeline
+      </a>
+      <button onclick="window.print()" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-print"></i> Print / Save PDF Receipt
+      </button>
+    </div>
+  </div>
+
+  <!-- The Official Printable Certificate Document -->
+  <div class="card p-8 bg-white border border-gray-300 shadow-md receipt-container relative overflow-hidden">
+    <!-- Watermark Background -->
+    <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+      <i class="fa-solid fa-shield-heart text-9xl"></i>
+    </div>
+
+    <!-- Top Institution Header -->
+    <div class="border-b-2 border-gray-900 pb-4 mb-6 flex items-start justify-between">
+      <div>
+        <div class="flex items-center gap-2 text-blue-900">
+          <i class="fa-solid fa-compass text-2xl"></i>
+          <span class="text-xl font-black uppercase tracking-wider">{{ receipt.institution_name }}</span>
+        </div>
+        <p class="text-xs text-gray-500 uppercase tracking-widest mt-0.5">Campus Lost & Found Administration System</p>
+      </div>
+      <div class="text-right">
+        <span class="inline-block bg-green-100 text-green-800 text-xs font-bold uppercase px-3 py-1 rounded-full mb-1">
+          <i class="fa-solid fa-check-double"></i> Verified Handover
+        </span>
+        <div class="text-xs font-mono text-gray-500">Ref: {{ receipt.receipt_number }}</div>
+      </div>
+    </div>
+
+    <div class="text-center my-6">
+      <h1 class="text-2xl font-serif font-bold text-gray-900">Certificate of Item Recovery</h1>
+      <p class="text-sm text-gray-500 mt-1">Official Proof of Ownership Resolution & Physical Return</p>
+    </div>
+
+    <!-- Metadata Grid -->
+    <div class="grid grid-cols-2 gap-6 my-6 bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm">
+      <div>
+        <span class="text-xs uppercase text-gray-400 font-semibold tracking-wider block">Recovered Item</span>
+        <span class="font-bold text-gray-900 text-base">{{ receipt.item_title }}</span>
+        <span class="text-xs text-gray-500 block mt-0.5">Category: {{ receipt.item_category }}</span>
+        <span class="text-xs text-gray-500 block">Item Code: <code class="font-mono text-blue-700">{{ receipt.item_code }}</code></span>
+      </div>
+      <div>
+        <span class="text-xs uppercase text-gray-400 font-semibold tracking-wider block">Recovery Event</span>
+        <span class="font-medium text-gray-900 block">{{ receipt.handover_date|date:"F d, Y — H:i" }}</span>
+        <span class="text-xs text-gray-600 block mt-0.5">Location: {{ receipt.handover_location }}</span>
+        <span class="text-xs text-green-700 font-semibold block mt-1">Status: Legally Returned to Owner</span>
+      </div>
+    </div>
+
+    <!-- Participants Table -->
+    <div class="my-6">
+      <h3 class="text-xs uppercase font-bold text-gray-500 tracking-wider mb-2">Authorized Participants</h3>
+      <table class="w-full text-sm border border-gray-200">
+        <thead class="bg-gray-100 text-xs text-gray-700 uppercase">
+          <tr>
+            <th class="py-2 px-3 text-left border-b">Role</th>
+            <th class="py-2 px-3 text-left border-b">Verified Name</th>
+            <th class="py-2 px-3 text-left border-b">Verification Method</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr>
+            <td class="py-2.5 px-3 font-semibold text-gray-800">Verified Owner / Claimant</td>
+            <td class="py-2.5 px-3 text-gray-900">{{ receipt.claimant_name }}</td>
+            <td class="py-2.5 px-3 text-gray-600">Ownership Proof + 6-Digit OTP</td>
+          </tr>
+          <tr>
+            <td class="py-2.5 px-3 font-semibold text-gray-800">Item Custodian / Finder</td>
+            <td class="py-2.5 px-3 text-gray-900">{{ receipt.holder_name }}</td>
+            <td class="py-2.5 px-3 text-gray-600">Physical Custody Verification</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cryptographic Signature -->
+    <div class="my-6 pt-4 border-t border-gray-200 text-xs text-gray-600">
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="font-bold text-gray-700 block mb-1">Cryptographic Digital Signature (SHA-256):</span>
+          <code class="font-mono text-xs bg-gray-100 p-1.5 rounded block text-gray-800 break-all max-w-lg">
+            {{ receipt.digital_signature }}
+          </code>
+          <p class="text-gray-400 text-xs mt-1">
+            Generated at {{ receipt.created_at|date:"c" }} | Immutable campus audit record
+          </p>
+        </div>
+        <div class="text-right">
+          <div class="w-24 h-24 border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-center p-1 text-gray-400">
+            <span class="text-xs uppercase font-bold tracking-widest text-green-700">Campus Official Seal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security & Privacy Notice Footer -->
+    <div class="border-t pt-4 text-center text-xs text-gray-400">
+      CampusCare Lost & Found Platform • Personal identifying numbers are masked in compliance with student privacy regulations.
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,221 @@
+{% extends 'dashboard/base_admin.html' %}
+{% load static %}
+
+{% block title %}Generate Reports & Data Exports — CampusCare{% endblock %}
+
+{% block admin_extra_css %}
+<style>
+  .export-format-card {
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: var(--transition);
+    background: #ffffff;
+  }
+  .export-format-card:hover {
+    border-color: var(--primary);
+    background: #f8fafc;
+  }
+  .export-format-card.selected {
+    border-color: var(--primary);
+    background: #eff6ff;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0 0 0.25rem 0;">
+      <i class="fa-solid fa-file-arrow-down text-green-600"></i> Activity Reports & Exports
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0;">
+      Generate filtered operational summaries in Microsoft Excel (.xlsx) or Portable Document Format (.pdf).
+    </p>
+  </div>
+  <div style="display:flex; align-items:center; gap:0.5rem;">
+    <a href="{% url 'security_dashboard:audit_logs' %}?action=export_data" class="btn btn-outline" style="font-size:0.85rem;">
+      <i class="fa-solid fa-clock-rotate-left"></i> Export Audit History
+    </a>
+  </div>
+</div>
+
+<!-- Privacy Compliance Callout -->
+<div class="card mb-4" style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+  <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+    <i class="fa-solid fa-user-shield text-blue-600" style="font-size: 1.35rem; margin-top: 0.15rem;"></i>
+    <div>
+      <div style="font-weight: 700; color: #1e3a8a; font-size: 0.9rem; margin-bottom: 0.25rem;">
+        Institutional Privacy & Security Redaction Safeguards
+      </div>
+      <p style="font-size: 0.825rem; color: #1e40af; margin: 0; line-height: 1.4;">
+        Exported documents strictly mask personal identifiers (e.g. <code>John Doe (S***12)</code>) and omit private phone numbers, raw verification responses, secret handover OTPs, and password credentials. Every download event is logged in the permanent audit trail with your staff identity, client IP, and applied filter criteria.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.75rem; box-shadow: var(--shadow-sm); margin-bottom: 2rem;">
+  <form method="post" id="exportForm">
+    {% csrf_token %}
+
+    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;">
+      1. Select Document Format
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+      <label class="export-format-card" id="card-xlsx" style="display: block;">
+        <input type="radio" name="export_format" value="xlsx" checked style="display: none;" onchange="updateFormatSelection()">
+        <div style="display: flex; align-items: flex-start; gap: 1rem;">
+          <div style="width: 3rem; height: 3rem; border-radius: var(--radius-md); background: #dcfce7; color: #15803d; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+            <i class="fa-solid fa-file-excel"></i>
+          </div>
+          <div>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">Excel Spreadsheet (.xlsx)</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">
+              Full multi-column tabular ledger with styled headers, auto-adjusted columns, and item status color highlights. Ideal for spreadsheet analysis and institutional archival.
+            </p>
+          </div>
+        </div>
+      </label>
+
+      <label class="export-format-card" id="card-pdf" style="display: block;">
+        <input type="radio" name="export_format" value="pdf" style="display: none;" onchange="updateFormatSelection()">
+        <div style="display: flex; align-items: flex-start; gap: 1rem;">
+          <div style="width: 3rem; height: 3rem; border-radius: var(--radius-md); background: #fee2e2; color: #b91c1c; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+          <div>
+            <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">Portable Document Format (.pdf)</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">
+              Executive print-ready PDF generated with ReportLab. Includes institutional header banner, summary KPIs, timestamp, and privacy-sanitized item tables.
+            </p>
+          </div>
+        </div>
+      </label>
+    </div>
+
+    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;">
+      2. Configure Filter Parameters
+    </h3>
+
+    <div class="form-grid">
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+          Report Type
+        </label>
+        {{ form.report_type }}
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+          Lifecycle Status
+        </label>
+        {{ form.status }}
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+          Category
+        </label>
+        {{ form.category }}
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+          Campus Location
+        </label>
+        {{ form.location }}
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+          Date From (Inclusive)
+        </label>
+        {{ form.date_from }}
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+          Date To (Inclusive)
+        </label>
+        {{ form.date_to }}
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem; margin-top: 1rem;">
+      <a href="{% url 'security_dashboard:overview' %}" class="btn btn-outline" style="padding: 0.65rem 1.25rem;">
+        Cancel
+      </a>
+      <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.75rem; font-weight: 700;" id="submitBtn">
+        <i class="fa-solid fa-download"></i> Generate & Download Report
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Report Types Overview -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+  <div class="card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      <i class="fa-solid fa-table-list text-green-600"></i> Excel Ledger Contents
+    </h4>
+    <ul style="font-size: 0.8rem; color: var(--text-muted); margin: 0; padding-left: 1.25rem; line-height: 1.6;">
+      <li>Report Reference Number & Report Type (Lost / Found)</li>
+      <li>Item Title & Categorization</li>
+      <li>Designated Campus Facility & Exact Date</li>
+      <li>Lifecycle Status (Pending, Matching, Claimed, Returned, Archived)</li>
+      <li>Masked Student Identity for Privacy Safeguards</li>
+      <li>Formatted with Auto-Filtered Columns and Title Banner</li>
+    </ul>
+  </div>
+
+  <div class="card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: var(--shadow-sm);">
+    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      <i class="fa-solid fa-file-invoice text-red-600"></i> PDF Executive Report Contents
+    </h4>
+    <ul style="font-size: 0.8rem; color: var(--text-muted); margin: 0; padding-left: 1.25rem; line-height: 1.6;">
+      <li>Official CampusCare Lost & Found Header Banner</li>
+      <li>Generation Timestamp and Filter Parameter Summary</li>
+      <li>Total Incidents Rendered Counter</li>
+      <li>Styled Data Table with alternating row shading</li>
+      <li>Masked Reporter Attribution to prevent data leakage</li>
+      <li>Official Digital Document Verification Seal</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateFormatSelection() {
+  const xlsxRadio = document.querySelector('input[name="export_format"][value="xlsx"]');
+  const pdfRadio = document.querySelector('input[name="export_format"][value="pdf"]');
+  const xlsxCard = document.getElementById('card-xlsx');
+  const pdfCard = document.getElementById('card-pdf');
+  const submitBtn = document.getElementById('submitBtn');
+
+  if (xlsxRadio.checked) {
+    xlsxCard.classList.add('selected');
+    pdfCard.classList.remove('selected');
+    submitBtn.innerHTML = '<i class="fa-solid fa-file-excel"></i> Generate & Download Excel';
+  } else {
+    pdfCard.classList.add('selected');
+    xlsxCard.classList.remove('selected');
+    submitBtn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Generate & Download PDF';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  updateFormatSelection();
+});
+</script>
+{% endblock %}
+

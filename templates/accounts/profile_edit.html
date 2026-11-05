@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile — CampusCare{% endblock %}
+
+{% block content %}
+<div style="max-width: 620px; margin: 2rem auto;">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'accounts:profile' %}" style="font-size: 0.875rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem;">
+      <i class="fa-solid fa-arrow-left"></i> Back to Profile
+    </a>
+    <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main);">
+      Update Your Profile
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Keep your campus contact information and avatar updated.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="padding: 2.25rem;">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <div>{{ form.non_field_errors.0 }}</div>
+          </div>
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+          <div class="form-group">
+            <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+              <div class="form-error">{{ form.first_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+              <div class="form-error">{{ form.last_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.phone_number.id_for_label }}" class="form-label">Contact Phone</label>
+          {{ form.phone_number }}
+          {% if form.phone_number.errors %}
+            <div class="form-error">{{ form.phone_number.errors.0 }}</div>
+          {% endif %}
+          <div class="form-help">Used for lost & found inquiries when you permit direct calls.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.department.id_for_label }}" class="form-label">Department / Branch</label>
+          {{ form.department }}
+          {% if form.department.errors %}
+            <div class="form-error">{{ form.department.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.profile_picture.id_for_label }}" class="form-label">Profile Photo</label>
+          {% if user.profile_picture %}
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
+              <div style="width: 50px; height: 50px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border-color);">
+                <img src="{{ user.profile_picture.url }}" alt="{{ user.display_name }}" style="width:100%; height:100%; object-fit:cover;">
+              </div>
+              <span style="font-size: 0.85rem; color: var(--text-muted);">Current avatar. Choose new image below to update.</span>
+            </div>
+          {% endif %}
+          {{ form.profile_picture }}
+          {% if form.profile_picture.errors %}
+            <div class="form-error">{{ form.profile_picture.errors.0 }}</div>
+          {% endif %}
+
+          <div id="imagePreviewContainer" style="display:none; margin-top:0.75rem; width:80px; height:80px; border-radius:50%; overflow:hidden; border:2px solid var(--border-color);">
+            <img id="imagePreview" src="#" alt="Preview" style="width:100%; height:100%; object-fit:cover;">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; align-items: center; margin-top: 2rem;">
+          <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i> Save Profile
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

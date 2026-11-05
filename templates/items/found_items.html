@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Found Items Directory — CampusCare{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+      <span class="badge badge-found"><i class="fa-solid fa-hand-holding-heart"></i> Directory</span>
+      <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); margin: 0;">Campus Found Items</h1>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Discovered belongings safely stored with student reporters or campus security desk.
+    </p>
+  </div>
+  <a href="{% url 'items:report_item' 'found' %}" class="btn btn-found">
+    <i class="fa-solid fa-plus"></i> Report a Found Item
+  </a>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <form method="get" action="{% url 'items:found_items' %}">
+    <div class="filter-grid">
+      <!-- Search Keyword -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem;">Search</label>
+        <input type="text" name="q" value="{{ filters.q }}" placeholder="Title, brand, description..." class="form-input">
+      </div>
+
+      <!-- Category Filter -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem;">Category</label>
+        <select name="category" class="form-select">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if filters.category_id == cat.id|stringformat:"s" %}selected{% endif %}>
+              {{ cat.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Location Filter -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem;">Discovered Location</label>
+        <select name="location" class="form-select">
+          <option value="">All Locations</option>
+          {% for loc in locations %}
+            <option value="{{ loc.id }}" {% if filters.location_id == loc.id|stringformat:"s" %}selected{% endif %}>
+              {{ loc.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem;">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Active (Open)</option>
+          {% for code, label in status_choices %}
+            <option value="{{ code }}" {% if filters.status == code %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Sort Filter -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem;">Sort By</label>
+        <select name="sort" class="form-select">
+          <option value="-created_at" {% if filters.sort == '-created_at' %}selected{% endif %}>Newest Reported</option>
+          <option value="-date_lost_or_found" {% if filters.sort == '-date_lost_or_found' %}selected{% endif %}>Date Found (Recent)</option>
+          <option value="date_lost_or_found" {% if filters.sort == 'date_lost_or_found' %}selected{% endif %}>Date Found (Oldest)</option>
+        </select>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn-primary" style="flex: 1;">
+          <i class="fa-solid fa-filter"></i> Filter
+        </button>
+        <a href="{% url 'items:found_items' %}" class="btn btn-secondary" title="Reset Filters">
+          <i class="fa-solid fa-rotate-left"></i>
+        </a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Item Cards Grid -->
+{% if page_obj %}
+  <div class="items-grid">
+    {% for item in page_obj %}
+      <div class="card item-card">
+        <div class="item-thumb-wrapper">
+          <span class="badge badge-found item-floating-badge">Found</span>
+          <span class="badge badge-{{ item.status }} item-status-pill">{{ item.get_status_display }}</span>
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.title }}">
+          {% else %}
+            <div class="item-placeholder-icon">
+              <i class="fa-solid {{ item.category.icon|default:'fa-box' }}"></i>
+            </div>
+          {% endif %}
+        </div>
+        <div class="item-info">
+          <div style="font-size: 0.775rem; font-weight: 600; color: var(--accent-found); margin-bottom: 0.25rem;">
+            {{ item.category.name }}
+          </div>
+          <h3 class="item-title">
+            <a href="{% url 'items:item_detail' item.pk %}">{{ item.title }}</a>
+          </h3>
+          <p class="item-desc-snippet">{{ item.description }}</p>
+
+          <div class="item-meta-row">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>{{ item.location.name|default:"Campus Area" }}</span>
+          </div>
+          {% if item.location_details %}
+            <div class="item-meta-row" style="font-style: italic;">
+              <i class="fa-solid fa-map-pin"></i>
+              <span>{{ item.location_details }}</span>
+            </div>
+          {% endif %}
+          <div class="item-meta-row">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span>Found on {{ item.date_lost_or_found|date:"M d, Y" }}</span>
+          </div>
+
+          <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">
+              Found by {{ item.user.display_name|truncatechars:12 }}
+            </span>
+            <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-outline-primary btn-sm">
+              Claim / Details <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ filters.q }}&category={{ filters.category_id }}&location={{ filters.location_id }}&status={{ filters.status }}&sort={{ filters.sort }}" class="page-link">
+          <i class="fa-solid fa-chevron-left"></i>
+        </a>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <span class="page-link active">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <a href="?page={{ num }}&q={{ filters.q }}&category={{ filters.category_id }}&location={{ filters.location_id }}&status={{ filters.status }}&sort={{ filters.sort }}" class="page-link">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ filters.q }}&category={{ filters.category_id }}&location={{ filters.location_id }}&status={{ filters.status }}&sort={{ filters.sort }}" class="page-link">
+          <i class="fa-solid fa-chevron-right"></i>
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+{% else %}
+  <div style="padding: 4rem 2rem; text-align: center; background: #ffffff; border-radius: var(--radius-lg); border: 1px dashed var(--border-color); margin-top: 1.5rem;">
+    <i class="fa-solid fa-box-open" style="font-size: 3rem; color: var(--text-light); margin-bottom: 1rem;"></i>
+    <h3 style="font-size: 1.35rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">No Found Items Listed</h3>
+    <p style="color: var(--text-muted); max-width: 450px; margin: 0 auto 1.5rem;">
+      Did you find an unattended item anywhere on campus? Report it to help its owner recover it!
+    </p>
+    <a href="{% url 'items:report_item' 'found' %}" class="btn btn-found">
+      <i class="fa-solid fa-hand-holding-heart"></i> Report Found Item
+    </a>
+  </div>
+{% endif %}
+{% endblock %}
+

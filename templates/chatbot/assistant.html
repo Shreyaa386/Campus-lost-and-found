@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}CampusCare AI Assistant — Lost & Found Guide{% endblock %}
+
+{% block extra_css %}
+<style>
+  .assistant-container {
+    max-width: 860px;
+    margin: 1.5rem auto 3rem auto;
+  }
+  .chat-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    height: 640px;
+    overflow: hidden;
+  }
+  .chat-header {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: #ffffff;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .chat-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .msg-bubble {
+    max-width: 80%;
+    padding: 0.85rem 1.15rem;
+    border-radius: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .msg-ai {
+    align-self: flex-start;
+    background: #ffffff;
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 0.25rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .msg-user {
+    align-self: flex-end;
+    background: #2563eb;
+    color: #ffffff;
+    border-bottom-right-radius: 0.25rem;
+  }
+  .chat-footer {
+    padding: 1rem 1.25rem;
+    background: #ffffff;
+    border-top: 1px solid var(--border-color);
+  }
+  .quick-pill {
+    display: inline-block;
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+    border-radius: 9999px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    margin: 0.2rem 0.2rem 0.2rem 0;
+  }
+  .quick-pill:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+  }
+  .matched-item-card {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.85rem;
+    margin-top: 0.5rem;
+    font-size: 0.825rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container assistant-container">
+  <div class="chat-card">
+    <!-- Header -->
+    <div class="chat-header">
+      <div style="display: flex; align-items: center; gap: 0.85rem;">
+        <div style="width: 2.75rem; height: 2.75rem; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 800; margin: 0;">CampusCare AI Guide</h2>
+          <div style="font-size: 0.75rem; opacity: 0.9;">
+            {{ institution_short_name }} • Official Lost & Found Assistant
+          </div>
+        </div>
+      </div>
+      <div>
+        <span class="badge" style="background: rgba(255,255,255,0.25); color: #fff; font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+          <i class="fa-solid fa-shield-halved"></i> Privacy Protected
+        </span>
+      </div>
+    </div>
+
+    <!-- Chat Messages Stream -->
+    <div class="chat-body" id="chatBody">
+      <!-- Welcome Message -->
+      <div class="msg-bubble msg-ai">
+        <div style="font-weight: 700; color: #1e3a8a; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+          <i class="fa-solid fa-sparkles text-amber-500"></i> Hello! How can I help you today?
+        </div>
+        <p style="margin: 0 0 0.5rem 0;">
+          I am your automated Lost and Found guide. You can ask me to:
+        </p>
+        <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.85rem; line-height: 1.5;">
+          <li>Search for missing items across campus reports.</li>
+          <li>Walk you through reporting lost or found property.</li>
+          <li>Explain your claim verification stages and OTP handover steps.</li>
+          <li>Find Campus Security drop-off locations and desks.</li>
+        </ul>
+        <div style="margin-top: 0.75rem; font-size: 0.75rem; color: #64748b;">
+          <em>Note: For student safety, I never disclose private verification answers, secret OTPs, or personal phone numbers.</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Prompts Toolbar -->
+    <div style="padding: 0.5rem 1.25rem; background: #ffffff; border-top: 1px solid var(--border-color); overflow-x: auto; white-space: nowrap;">
+      <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin-right: 0.5rem;">Quick Prompts:</span>
+      {% for act in initial_actions %}
+        <button type="button" class="quick-pill" onclick="sendQuickPrompt('{{ act.query|escapejs }}')">
+          {{ act.label }}
+        </button>
+      {% endfor %}
+    </div>
+
+    <!-- Input Form -->
+    <div class="chat-footer">
+      <form id="chatForm" onsubmit="handleChatSubmit(event)" style="display: flex; gap: 0.75rem; align-items: center;">
+        {% csrf_token %}
+        <input
+          type="text"
+          id="userInput"
+          class="form-input"
+          placeholder="Ask a question or search for an item (e.g. 'I lost my keys in the library')..."
+          style="flex: 1; height: 2.75rem; border-radius: 9999px; padding: 0 1.25rem;"
+          autocomplete="off"
+        />
+        <button
+          type="submit"
+          id="sendBtn"
+          class="btn btn-primary"
+          style="height: 2.75rem; width: 2.75rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+        >
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const chatBody = document.getElementById('chatBody');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+
+function scrollToBottom() {
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+function appendUserMessage(text) {
+  const div = document.createElement('div');
+  div.className = 'msg-bubble msg-user';
+  div.innerText = text;
+  chatBody.appendChild(div);
+  scrollToBottom();
+}
+
+function appendAIMessage(reply, matchedItems = []) {
+  const div = document.createElement('div');
+  div.className = 'msg-bubble msg-ai';
+
+  // Format line breaks and markdown bolding safely
+  let formatted = reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  formatted = formatted.replace(/\n/g, '<br>');
+
+  div.innerHTML = formatted;
+
+  if (matchedItems && matchedItems.length > 0) {
+    const listWrap = document.createElement('div');
+    listWrap.style.marginTop = '0.75rem';
+    listWrap.innerHTML = '<strong style="font-size:0.8rem; color:#1e3a8a;">Matching Campus Reports:</strong>';
+    matchedItems.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'matched-item-card';
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong>[${item.report_type}] ${item.title}</strong>
+          <a href="${item.url}" class="btn btn-sm btn-outline" style="font-size:0.7rem; padding:0.15rem 0.45rem;">View</a>
+        </div>
+        <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">
+          <i class="fa-solid fa-location-dot"></i> ${item.location} • <i class="fa-solid fa-calendar"></i> ${item.date}
+        </div>
+      `;
+      listWrap.appendChild(card);
+    });
+    div.appendChild(listWrap);
+  }
+
+  chatBody.appendChild(div);
+  scrollToBottom();
+}
+
+function sendQuickPrompt(query) {
+  userInput.value = query;
+  handleChatSubmit(new Event('submit'));
+}
+
+async function handleChatSubmit(e) {
+  e.preventDefault();
+  const text = userInput.value.trim();
+  if (!text) return;
+
+  appendUserMessage(text);
+  userInput.value = '';
+  userInput.disabled = true;
+  sendBtn.disabled = true;
+
+  // Typing indicator
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'msg-bubble msg-ai';
+  typingDiv.id = 'typingIndicator';
+  typingDiv.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing...';
+  chatBody.appendChild(typingDiv);
+  scrollToBottom();
+
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  try {
+    const response = await fetch('/assistant/api/chat/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ message: text })
+    });
+
+    const data = await response.json();
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.remove();
+
+    if (data.status === 'success') {
+      appendAIMessage(data.reply, data.matched_items);
+    } else {
+      appendAIMessage(data.message || 'An error occurred while generating response.');
+    }
+  } catch (err) {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.remove();
+    appendAIMessage('Unable to connect to the assistant server. Please try again.');
+  } finally {
+    userInput.disabled = false;
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+}
+</script>
+{% endblock %}
+

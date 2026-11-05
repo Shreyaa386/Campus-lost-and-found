@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Initiate Recovery Handover — CampusCare{% endblock %}
+
+{% block content %}
+<div class="container py-8 max-w-2xl mx-auto">
+  <div class="card p-8">
+    <div class="flex items-center gap-3 mb-6 border-b pb-4">
+      <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xl">
+        <i class="fa-solid fa-handshake"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Initiate Recovery Handover</h1>
+        <p class="text-sm text-gray-500">Secure physical exchange setup for Claim #{{ claim.pk }}</p>
+      </div>
+    </div>
+
+    <!-- Item & Claimant Summary -->
+    <div class="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div>
+          <span class="text-gray-500 block">Item Being Recovered:</span>
+          <span class="font-semibold text-gray-900">{{ claim.item.title }}</span>
+          <span class="text-xs text-gray-500 block">Category: {{ claim.item.category.name }}</span>
+        </div>
+        <div>
+          <span class="text-gray-500 block">Verified Owner:</span>
+          <span class="font-semibold text-gray-900">{{ claim.claimant.display_name }}</span>
+          <span class="text-xs text-gray-500 block">Roll / ID: {{ claim.claimant.student_id|default:"Verified" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Info Banner -->
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-amber-900 text-sm">
+      <div class="flex items-start gap-2">
+        <i class="fa-solid fa-shield-halved text-amber-600 mt-0.5"></i>
+        <div>
+          <strong class="font-semibold">Cryptographic OTP Handover Safeguard:</strong>
+          <p class="mt-1">
+            Upon initiation, a secure, time-limited 6-digit OTP will be generated for the verified claimant.
+            The item holder or campus officer will verify this OTP server-side at the physical exchange point before completing the return.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+
+      <div>
+        <label for="{{ form.handover_location.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          {{ form.handover_location.label }}
+        </label>
+        {{ form.handover_location }}
+        {% if form.handover_location.help_text %}
+          <p class="text-xs text-gray-500 mt-1">{{ form.handover_location.help_text }}</p>
+        {% endif %}
+        {% if form.handover_location.errors %}
+          <p class="text-xs text-red-600 mt-1">{{ form.handover_location.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.handover_notes.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          {{ form.handover_notes.label }}
+        </label>
+        {{ form.handover_notes }}
+        {% if form.handover_notes.help_text %}
+          <p class="text-xs text-gray-500 mt-1">{{ form.handover_notes.help_text }}</p>
+        {% endif %}
+        {% if form.handover_notes.errors %}
+          <p class="text-xs text-red-600 mt-1">{{ form.handover_notes.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center justify-between pt-4 border-t">
+        <a href="{% url 'items:claim_detail' claim.pk %}" class="btn btn-secondary">
+          <i class="fa-solid fa-arrow-left"></i> Back to Claim
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-key"></i> Generate OTP & Start Handover
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

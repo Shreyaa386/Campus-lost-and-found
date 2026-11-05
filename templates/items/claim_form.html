@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify Ownership & Claim: {{ item.title }} — CampusCare{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; margin: 0 auto;">
+  <!-- Header -->
+  <div style="margin-bottom: 2rem;">
+    <a href="{% url 'items:item_detail' item.pk %}" style="font-size: 0.875rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem;">
+      <i class="fa-solid fa-arrow-left"></i> Back to Found Item Details
+    </a>
+    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+      <span class="badge badge-found"><i class="fa-solid fa-hand-holding-heart"></i> Found Item</span>
+      <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); margin: 0;">
+        Ownership Verification Claim
+      </h1>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Submit proof of ownership for "{{ item.title }}". To prevent fraudulent claims, answers are reviewed by campus security before handover.
+    </p>
+  </div>
+
+  <!-- Item Reference Snapshot Card -->
+  <div class="card" style="margin-bottom: 1.5rem; background: #fafbfc;">
+    <div class="card-body" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="width: 3.5rem; height: 3.5rem; border-radius: var(--radius-sm); overflow: hidden; background: #f1f5f9; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color);">
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.title }}" style="width:100%; height:100%; object-fit:cover;">
+          {% else %}
+            <i class="fa-solid {{ item.category.icon|default:'fa-box' }}" style="font-size: 1.75rem; color: #94a3b8;"></i>
+          {% endif %}
+        </div>
+        <div>
+          <div style="font-size: 0.775rem; font-weight: 600; color: var(--primary);">{{ item.category.name }}</div>
+          <div style="font-weight: 700; color: var(--text-main); font-size: 1.05rem;">{{ item.title }}</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">
+            <i class="fa-solid fa-location-dot" style="color: #ef4444;"></i> {{ item.location.name|default:"Campus" }} &bull; Found on {{ item.date_lost_or_found|date:"M d, Y" }}
+          </div>
+        </div>
+      </div>
+      <span class="badge badge-open">Open for Verification</span>
+    </div>
+  </div>
+
+  <!-- Privacy Security Guarantee Banner -->
+  <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 2rem; display: flex; gap: 1rem; align-items: flex-start;">
+    <div style="width: 2.25rem; height: 2.25rem; border-radius: 50%; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1rem;">
+      <i class="fa-solid fa-user-shield"></i>
+    </div>
+    <div>
+      <h3 style="font-size: 0.95rem; font-weight: 700; color: #065f46; margin-bottom: 0.25rem;">
+        Strict Privacy & Claimant Protection Enforced
+      </h3>
+      <p style="font-size: 0.85rem; color: #047857; margin: 0; line-height: 1.5;">
+        All answers and identifying proof you submit are <strong>100% private</strong>. They are never published on the website or exposed to other students. Only authorized campus staff and security officers can inspect them during verification.
+      </p>
+    </div>
+  </div>
+
+  <!-- Claim Submission Form Card -->
+  <div class="card">
+    <div class="card-body" style="padding: 2.25rem;">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-error">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>{{ form.non_field_errors.0 }}</div>
+          </div>
+        {% endif %}
+
+        <!-- Dynamic Verification Questions (if item reporter/staff set any) -->
+        {% if item.verification_questions %}
+          <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.75rem;">
+              <i class="fa-solid fa-circle-question" style="color: var(--primary);"></i>
+              <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 0;">
+                Finder Verification Questions
+              </h4>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+              Please answer the specific question(s) asked by the finder/security desk:
+            </p>
+
+            {% for field in form %}
+              {% if 'question_' in field.name %}
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                  <label for="{{ field.id_for_label }}" class="form-label">
+                    {{ field.label }} <span style="color:#ef4444;">*</span>
+                  </label>
+                  {{ field }}
+                  {% if field.errors %}
+                    <div class="form-error">{{ field.errors.0 }}</div>
+                  {% endif %}
+                  {% if field.help_text %}
+                    <div class="form-help">{{ field.help_text }}</div>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Private Identifying Details -->
+        <div class="form-group">
+          <label for="{{ form.identifying_details.id_for_label }}" class="form-label">
+            Private Identifying Details <span style="color:#ef4444;">*</span>
+          </label>
+          {{ form.identifying_details }}
+          {% if form.identifying_details.errors %}
+            <div class="form-error">{{ form.identifying_details.errors.0 }}</div>
+          {% endif %}
+          <div class="form-help">
+            Describe details that were not mentioned in the public listing: brand/model specifics, unique scratch locations, lock screen photo, internal compartment contents, or stickers.
+          </div>
+        </div>
+
+        <!-- Optional Proof Image Upload -->
+        <div class="form-group">
+          <label for="{{ form.proof_image.id_for_label }}" class="form-label">
+            Proof Photo or Document (Optional)
+          </label>
+          {{ form.proof_image }}
+          {% if form.proof_image.errors %}
+            <div class="form-error">{{ form.proof_image.errors.0 }}</div>
+          {% endif %}
+          <div class="form-help">
+            Upload a past photo with the item, original bill/receipt, box photo with serial number, or student ID card. (Max 5MB, JPG/PNG/WEBP).
+          </div>
+
+          <div id="imagePreviewContainer" style="display:none; margin-top:1rem; max-width:240px; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border-color);">
+            <img id="imagePreview" src="#" alt="Proof Preview" style="width:100%; height:auto;">
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; align-items: center; margin-top: 2rem;">
+          <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-secondary">
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-shield-check"></i> Submit Ownership Claim
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

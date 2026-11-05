@@ -1,0 +1,115 @@
+{% extends 'dashboard/base_admin.html' %}
+
+{% block title %}Campus Locations & Heatmap Coordinates — Security Dashboard{% endblock %}
+
+{% block admin_content %}
+<div style="margin-bottom: 1.5rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0;">
+        Campus Physical Locations
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
+        Configure campus facilities and approved GPS coordinates for the recovery heatmap.
+      </p>
+    </div>
+    <a href="{% url 'security_dashboard:heatmap' %}" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-fire"></i> Open Campus Heatmap
+    </a>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 2fr; gap:1.5rem;">
+  <!-- Add Location Form -->
+  <div class="card p-4">
+    <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.75rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+      <i class="fa-solid fa-map-location-dot text-red-500"></i> Configure Facility Coordinates
+    </h3>
+    <form method="post" action="{% url 'security_dashboard:locations' %}">
+      {% csrf_token %}
+      <div style="margin-bottom:0.75rem;">
+        <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Location Name</label>
+        {{ form.name }}
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-bottom:0.75rem;">
+        <div>
+          <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Building</label>
+          {{ form.building }}
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Floor</label>
+          {{ form.floor }}
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-bottom:0.75rem;">
+        <div>
+          <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Latitude (GPS)</label>
+          {{ form.latitude }}
+        </div>
+        <div>
+          <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Longitude (GPS)</label>
+          {{ form.longitude }}
+        </div>
+      </div>
+      <div style="margin-bottom:0.75rem;">
+        <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Description / Notes</label>
+        {{ form.description }}
+      </div>
+      <div style="margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+        {{ form.is_active }}
+        <label style="font-size:0.85rem; font-weight:600;">Active in report forms</label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">
+        Save Campus Facility
+      </button>
+    </form>
+  </div>
+
+  <!-- Locations Table -->
+  <div class="card p-0" style="overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table" style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+        <thead style="background:#f8fafc; border-bottom:1.5px solid var(--border-color); text-transform:uppercase; font-size:0.75rem; color:var(--text-muted);">
+          <tr>
+            <th style="padding:0.75rem 1rem;">Facility Name</th>
+            <th style="padding:0.75rem 1rem;">Building & Floor</th>
+            <th style="padding:0.75rem 1rem;">GPS Coordinates</th>
+            <th style="padding:0.75rem 1rem; text-align:center;">Items</th>
+            <th style="padding:0.75rem 1rem; text-align:center;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for loc in locations %}
+            <tr style="border-bottom:1px solid var(--border-color);">
+              <td style="padding:0.75rem 1rem; font-weight:700; color:var(--text-main);">
+                {{ loc.name }}
+              </td>
+              <td style="padding:0.75rem 1rem; color:var(--text-muted);">
+                {{ loc.building }}{% if loc.floor %} &bull; {{ loc.floor }}{% endif %}
+              </td>
+              <td style="padding:0.75rem 1rem; font-family:monospace; font-size:0.8rem;">
+                {% if loc.latitude and loc.longitude %}
+                  <span class="text-blue-600 font-semibold">{{ loc.latitude|floatformat:4 }}, {{ loc.longitude|floatformat:4 }}</span>
+                {% else %}
+                  <span class="text-gray-400 italic">No GPS set</span>
+                {% endif %}
+              </td>
+              <td style="padding:0.75rem 1rem; text-align:center; font-weight:700; color:#1e40af;">
+                {{ loc.items_count }}
+              </td>
+              <td style="padding:0.75rem 1rem; text-align:center;">
+                {% if loc.is_active %}
+                  <span class="badge badge-success">Active</span>
+                {% else %}
+                  <span class="badge badge-secondary">Disabled</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

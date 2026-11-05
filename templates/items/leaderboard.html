@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Campus Citizenship Leaderboard &amp; Rewards — CampusCare{% endblock %}
+
+{% block content %}
+<div class="rewards-container">
+  <!-- 1. Top Citizenship Score Summary Card -->
+  <div class="rewards-hero-card">
+    <div class="rewards-hero-left">
+      <div class="rewards-hero-tag">
+        <i class="fa-solid fa-medal text-amber-300"></i> Campus Recovery Citizenship
+      </div>
+      <h1 class="rewards-hero-title">Honor Roll &amp; Rewards</h1>
+      <p class="rewards-hero-desc">
+        Recognizing responsible students and staff at 
+        <strong>{{ current_institution.name|default:user.institution.name|default:"Lovely Professional University (LPU), Phagwara, Punjab" }}</strong> 
+        who safeguard our academic community by promptly reporting and safely returning lost belongings.
+      </p>
+    </div>
+
+    {% if user.is_authenticated %}
+      <div class="rewards-score-badge-card">
+        <span class="rewards-score-label">Your Citizenship Score</span>
+        <div class="rewards-score-value">
+          {{ user.reward_points|default:0 }} <small>pts</small>
+        </div>
+        {% if user_rank %}
+          <div class="rewards-rank-pill">
+            <i class="fa-solid fa-trophy text-amber-300"></i> Campus Rank: #{{ user_rank }}
+          </div>
+        {% else %}
+          <div class="rewards-rank-pill">
+            <i class="fa-solid fa-hand-holding-heart text-amber-300"></i> Return an item to rank
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- 2. Main Two-Column Grid: Leaderboard & Badges -->
+  <div class="rewards-grid-layout">
+    <!-- Left Column: Top Contributors & User Ledger -->
+    <div class="rewards-main-column">
+      <!-- Leaderboard Card -->
+      <div class="rewards-card">
+        <div class="rewards-card-header">
+          <h2 class="rewards-card-title">
+            <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> Top Campus Contributors
+          </h2>
+          <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">
+            <i class="fa-solid fa-shield-halved" style="color: #10b981;"></i> Privacy-Conscious Campus Names
+          </span>
+        </div>
+
+        <div class="rewards-card-body" style="padding: 0;">
+          {% if leaderboard %}
+            <div class="leaderboard-table-wrapper">
+              <table class="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th style="width: 60px; text-align: center;">Rank</th>
+                    <th>Contributor</th>
+                    <th>Department</th>
+                    <th style="text-align: center;">Returns</th>
+                    <th style="text-align: right;">Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for entry in leaderboard %}
+                    <tr class="{% if user.is_authenticated and entry.user_id == user.pk %}current-user-row{% endif %}">
+                      <td style="text-align: center;">
+                        {% if entry.rank == 1 %}
+                          <span class="rank-badge-medal rank-gold" title="Gold Contributor">1</span>
+                        {% elif entry.rank == 2 %}
+                          <span class="rank-badge-medal rank-silver" title="Silver Contributor">2</span>
+                        {% elif entry.rank == 3 %}
+                          <span class="rank-badge-medal rank-bronze" title="Bronze Contributor">3</span>
+                        {% else %}
+                          <span class="rank-default">#{{ entry.rank }}</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <div style="font-weight: 700; color: #0f172a;">{{ entry.display_name }}</div>
+                        {% if entry.badges %}
+                          <div style="display: flex; gap: 0.35rem; margin-top: 0.2rem;">
+                            {% for b in entry.badges %}
+                              <span style="color: #f59e0b; font-size: 0.75rem;" title="{{ b.name }}: {{ b.description }}">
+                                <i class="fa-solid {{ b.icon|default:'fa-award' }}"></i>
+                              </span>
+                            {% endfor %}
+                          </div>
+                        {% endif %}
+                      </td>
+                      <td style="color: #64748b; font-size: 0.825rem;">
+                        {{ entry.department|default:"General Campus" }}
+                      </td>
+                      <td style="text-align: center; font-weight: 600; color: #334155;">
+                        {{ entry.returns_count }}
+                      </td>
+                      <td style="text-align: right; font-weight: 800; color: #1e40af; font-size: 0.95rem;">
+                        {{ entry.reward_points }} pts
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div style="text-align: center; padding: 3rem 1.5rem; color: #94a3b8;">
+              <i class="fa-solid fa-award" style="font-size: 2.75rem; color: #cbd5e1; margin-bottom: 0.75rem; display: block;"></i>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">No Reward Points Recorded Yet</h3>
+              <p style="font-size: 0.875rem; color: #64748b; max-width: 420px; margin: 0 auto;">
+                Be the first campus citizen to report and return a lost item to claim the #1 spot on the leaderboard!
+              </p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- User Reward Transaction History / Ledger (If Authenticated) -->
+      {% if user.is_authenticated and user_transactions %}
+        <div class="rewards-card">
+          <div class="rewards-card-header">
+            <h2 class="rewards-card-title">
+              <i class="fa-solid fa-clock-rotate-left" style="color: #64748b;"></i> Your Recent Reward Ledger
+            </h2>
+            <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Verified Activity</span>
+          </div>
+          <div class="rewards-card-body">
+            {% for tx in user_transactions %}
+              <div class="ledger-item-row">
+                <div class="ledger-item-left">
+                  <div class="ledger-icon-box">
+                    <i class="fa-solid fa-plus"></i>
+                  </div>
+                  <div>
+                    <div class="ledger-item-title">{{ tx.description }}</div>
+                    <div class="ledger-item-time">
+                      {{ tx.created_at|date:"M d, Y • h:i A" }} &bull; {{ tx.get_transaction_type_display }}
+                    </div>
+                  </div>
+                </div>
+                <div class="ledger-points-credit">
+                  +{{ tx.points }} pts
+                </div>
+              </div>
+            {% empty %}
+              <p style="color: #94a3b8; font-size: 0.875rem; margin: 0; text-align: center; padding: 1.5rem 0;">
+                No reward transactions recorded yet. Hand over a found item to earn citizenship points!
+              </p>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Right Column: Milestone Badges & Community Rules -->
+    <div class="rewards-side-column">
+      <!-- Milestone Badges Showcase -->
+      <div class="rewards-card">
+        <div class="rewards-card-header">
+          <h2 class="rewards-card-title">
+            <i class="fa-solid fa-award" style="color: #2563eb;"></i> Milestone Badges
+          </h2>
+          <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">Achievements</span>
+        </div>
+        <div class="rewards-card-body">
+          <div class="badges-showcase-grid">
+            {% for b in all_badges %}
+              <div class="badge-milestone-card">
+                <div class="badge-milestone-icon {% if b in user_badges %}unlocked{% endif %}">
+                  <i class="fa-solid {{ b.icon|default:'fa-medal' }}"></i>
+                </div>
+                <div class="badge-milestone-info">
+                  <div class="badge-milestone-name">
+                    {{ b.name }}
+                    {% if b in user_badges %}
+                      <span class="badge badge-sm" style="background:#fef3c7; color:#b45309; font-size:0.65rem; margin-left:0.35rem;">
+                        <i class="fa-solid fa-check"></i> Earned
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="badge-milestone-desc">{{ b.description }}</div>
+                  <div class="badge-milestone-thresholds">
+                    {% if b.returns_threshold %}
+                      <span><i class="fa-solid fa-hand-holding-heart"></i> {{ b.returns_threshold }} Return(s)</span>
+                    {% endif %}
+                    {% if b.points_threshold %}
+                      <span><i class="fa-solid fa-star"></i> {{ b.points_threshold }}+ Points</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% empty %}
+              <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; margin: 0; padding: 1rem 0;">
+                Milestone badges will appear here once configured.
+              </p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Point System Guidelines Card -->
+      <div class="anti-manipulation-box">
+        <h4>
+          <i class="fa-solid fa-shield-halved" style="color: #2563eb;"></i> Anti-Manipulation Protocol
+        </h4>
+        <ul>
+          <li>Points are strictly credited <strong>after physical recovery</strong> is verified through time-limited cryptographic OTPs.</li>
+          <li>Submitting claims on reports you authored yourself is blocked by server validation.</li>
+          <li>Each item allows at most one recovery reward transaction in the permanent ledger.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
