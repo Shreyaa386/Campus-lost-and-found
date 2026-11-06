@@ -61,11 +61,31 @@
       </select>
     </div>
 
+    <div style="flex:1; min-width:140px;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Priority</label>
+      <select name="priority" class="form-select" style="width:100%;">
+        <option value="">All Priorities</option>
+        {% for p_val, p_label in priorities %}
+          <option value="{{ p_val }}" {% if priority_filter == p_val %}selected{% endif %}>{{ p_label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="flex:1; min-width:150px;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Sort</label>
+      <select name="sort" class="form-select" style="width:100%;">
+        <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest Reported</option>
+        <option value="priority_desc" {% if sort_by == 'priority_desc' %}selected{% endif %}>Highest Priority First</option>
+        <option value="priority_asc" {% if sort_by == 'priority_asc' %}selected{% endif %}>Lowest Priority First</option>
+        <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest Reported</option>
+      </select>
+    </div>
+
     <div>
       <button type="submit" class="btn btn-primary" style="height:2.45rem;">
         <i class="fa-solid fa-filter"></i> Filter
       </button>
-      {% if q or report_type or status_filter or category_id or location_id %}
+      {% if q or report_type or status_filter or category_id or location_id or priority_filter or sort_by %}
         <a href="{% url 'security_dashboard:items' %}" class="btn btn-secondary" style="height:2.45rem;">Reset</a>
       {% endif %}
     </div>
@@ -82,6 +102,7 @@
           <th style="padding:0.75rem 1rem;">Type</th>
           <th style="padding:0.75rem 1rem;">Category</th>
           <th style="padding:0.75rem 1rem;">Campus Location</th>
+          <th style="padding:0.75rem 1rem; text-align:center;">Priority</th>
           <th style="padding:0.75rem 1rem; text-align:center;">Status</th>
           <th style="padding:0.75rem 1rem;">Reported By</th>
           <th style="padding:0.75rem 1rem; text-align:right;">Actions</th>
@@ -104,6 +125,9 @@
             </td>
             <td style="padding:0.75rem 1rem; color:var(--text-muted);">
               {{ item.location.name|default:"General Campus" }}
+            </td>
+            <td style="padding:0.75rem 1rem; text-align:center;">
+              <span class="badge badge-priority-{{ item.priority }}">{{ item.get_priority_display }}</span>
             </td>
             <td style="padding:0.75rem 1rem; text-align:center;">
               <span class="badge badge-{{ item.status }}">{{ item.get_status_display }}</span>
@@ -132,7 +156,7 @@
           </tr>
         {% empty %}
           <tr>
-            <td colspan="7" style="text-align:center; padding:2.5rem; color:var(--text-muted);">
+            <td colspan="8" style="text-align:center; padding:2.5rem; color:var(--text-muted);">
               No items found matching the selected filters.
             </td>
           </tr>

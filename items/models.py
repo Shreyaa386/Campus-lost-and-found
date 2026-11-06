@@ -47,6 +47,25 @@ class Item(models.Model):
         (CONTACT_CAMPUS_DESK, 'Campus Lost & Found Desk (Private - No Personal Info Shown)'),
     ]
 
+    PRIORITY_CRITICAL = 'critical'
+    PRIORITY_HIGH = 'high'
+    PRIORITY_MEDIUM = 'medium'
+    PRIORITY_LOW = 'low'
+
+    PRIORITY_CHOICES = [
+        (PRIORITY_CRITICAL, 'Critical'),
+        (PRIORITY_HIGH, 'High'),
+        (PRIORITY_MEDIUM, 'Medium'),
+        (PRIORITY_LOW, 'Low'),
+    ]
+
+    PRIORITY_EXPLANATIONS = {
+        PRIORITY_CRITICAL: 'Emergency or life-critical item (e.g. prescription medicines, medical device, primary home/vehicle emergency keys). Requires immediate campus broadcast.',
+        PRIORITY_HIGH: 'Urgent high-value item or sensitive ID (e.g. mobile phone, laptop, wallet, government ID card, passport). High risk of loss or unauthorized misuse.',
+        PRIORITY_MEDIUM: 'Standard valuable personal belonging (e.g. backpacks, textbooks, branded jackets, calculators, watches). Standard campus recovery process.',
+        PRIORITY_LOW: 'Common everyday utility item (e.g. water bottles, stationery, umbrellas, notebooks). Non-urgent item.',
+    }
+
     item_code = models.CharField(
         max_length=30,
         unique=True,
@@ -104,6 +123,12 @@ class Item(models.Model):
         choices=STATUS_CHOICES,
         default=STATUS_OPEN
     )
+    priority = models.CharField(
+        max_length=15,
+        choices=PRIORITY_CHOICES,
+        default=PRIORITY_MEDIUM,
+        help_text="Set the priority according to the importance and urgency of this item."
+    )
     contact_preference = models.CharField(
         max_length=20,
         choices=CONTACT_PREFERENCE_CHOICES,
@@ -142,10 +167,24 @@ class Item(models.Model):
             models.Index(fields=['institution', 'status']),
             models.Index(fields=['category', 'status']),
             models.Index(fields=['item_code']),
+            models.Index(fields=['priority']),
+            models.Index(fields=['report_type', 'priority']),
         ]
 
     def __str__(self):
         return f"[{self.get_report_type_display()}] {self.title} ({self.get_status_display()})"
+
+    @property
+    def priority_meta(self):
+        """Returns visual styling metadata and human-readable explanation."""
+        from .services.priority_service import PriorityService
+        return PriorityService.get_priority_meta(self.priority)
+
+    @classmethod
+    def suggest_priority(cls, title: str, category_name: str = "") -> str:
+        """Heuristic smart priority suggestion without forcing."""
+        from .services.priority_service import PriorityService
+        return PriorityService.suggest_priority(title, category_name)
 
     @property
     def is_active(self):

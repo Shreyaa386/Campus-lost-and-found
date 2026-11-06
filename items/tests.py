@@ -30,8 +30,7 @@ from items.services import (
     ImageSimilarityService,
     MatchingService,
     NotificationService,
-    TagService,
-    QRService,
+    PriorityService,
     RewardService,
 )
 
@@ -819,24 +818,52 @@ class RecoveryAndRewardsTest(TestCase):
         with self.assertRaises(ValidationError):
             receipt.clean()
 
-    def test_qr_code_tag_generation(self):
-        """Test printable item tag generation contains canonical item URL without private secrets or QR images."""
-        tag_context = TagService.generate_tag_context(self.found_item)
-        self.assertIn('safe_url', tag_context)
-        self.assertIn(f"/{self.found_item.pk}/", tag_context['safe_url'])
-        self.assertNotIn(self.finder.email, tag_context['safe_url'])
-        self.assertNotIn(self.finder.phone_number, tag_context['safe_url'])
+    def test_item_tag_feature_completely_removed(self):
+        """
+        Verify that the Item Tag / Print Item Tag feature and routes are completely removed:
+        - Named routes 'items:item_tag' and 'items:qr_tag' do not exist (NoReverseMatch).
+        - Direct requests to /<pk>/tag/ and /<pk>/qr/ return 404.
+        - Application templates (item_detail, my_reports, recovery_timeline, conversation, handover)
+          do not render any 'Item Tag' or 'Print Item Tag' links/buttons.
+        """
+        from django.urls import NoReverseMatch
 
-        # Printable item tag page accessible via both 'item_tag' and backward-compatible 'qr_tag' routes
-        res_tag = self.client.get(reverse('items:item_tag', kwargs={'pk': self.found_item.pk}))
-        self.assertEqual(res_tag.status_code, 200)
-        self.assertContains(res_tag, self.found_item.item_code)
-        self.assertNotContains(res_tag, 'data:image/png;base64')
-        self.assertNotContains(res_tag, 'qr-matrix-box')
+        # Verify named URL patterns are removed
+        with self.assertRaises(NoReverseMatch):
+            reverse('items:item_tag', kwargs={'pk': self.found_item.pk})
 
-        res_qr = self.client.get(reverse('items:qr_tag', kwargs={'pk': self.found_item.pk}))
-        self.assertEqual(res_qr.status_code, 200)
-        self.assertContains(res_qr, self.found_item.item_code)
+        with self.assertRaises(NoReverseMatch):
+            reverse('items:qr_tag', kwargs={'pk': self.found_item.pk})
+
+        # Verify direct routes return 404
+        self.client.force_login(self.finder)
+        res_direct_tag = self.client.get(f"/{self.found_item.pk}/tag/")
+        self.assertEqual(res_direct_tag.status_code, 404)
+
+        res_direct_qr = self.client.get(f"/{self.found_item.pk}/qr/")
+        self.assertEqual(res_direct_qr.status_code, 404)
+
+        # Verify Item Detail page continues to work and has no Item Tag button
+        res_detail = self.client.get(reverse('items:item_detail', kwargs={'pk': self.found_item.pk}))
+        self.assertEqual(res_detail.status_code, 200)
+        self.assertContains(res_detail, self.found_item.title)
+        self.assertNotContains(res_detail, 'Item Tag')
+        self.assertNotContains(res_detail, 'Print Item Tag')
+        self.assertNotContains(res_detail, '/tag/')
+
+        # Verify My Reports page continues to work and has no Item Tag links
+        res_reports = self.client.get(reverse('items:my_reports'))
+        self.assertEqual(res_reports.status_code, 200)
+        self.assertNotContains(res_reports, 'Item Tag')
+        self.assertNotContains(res_reports, 'Print Item Tag')
+        self.assertNotContains(res_reports, '/tag/')
+
+        # Verify Recovery Timeline page continues to work and has no Item Tag links
+        res_timeline = self.client.get(reverse('items:recovery_timeline', kwargs={'pk': self.found_item.pk}))
+        self.assertEqual(res_timeline.status_code, 200)
+        self.assertContains(res_timeline, self.found_item.item_code)
+        self.assertNotContains(res_timeline, 'Item Tag')
+        self.assertNotContains(res_timeline, '/tag/')
 
     def test_anonymous_messaging_and_abuse_reporting(self):
         """Test anonymous communication and abuse flagging."""
@@ -1034,5 +1061,419 @@ class RecoveryAndRewardsTest(TestCase):
         self.assertContains(res_detail, self.found_item.title)
         self.assertContains(res_detail, self.found_item.item_code)
         self.assertContains(res_detail, f"Claim #{self.approved_claim.pk}")
+
+
+class PriorityManagementFeatureTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.institution = Institution.objects.create(
+            name="Lovely Professional University",
+            short_name="LPU"
+        )
+        self.category_electronics = Category.objects.create(
+            name="Electronics",
+            slug="electronics",
+            institution=self.institution
+        )
+        self.category_docs = Category.objects.create(
+            name="Cards & Documents",
+            slug="cards-documents",
+            institution=self.institution
+        )
+        self.category_bags = Category.objects.create(
+            name="Bags & Wallets",
+            slug="bags-wallets",
+            institution=self.institution
+        )
+        self.category_stationery = Category.objects.create(
+            name="Stationery & Books",
+            slug="stationery-books",
+            institution=self.institution
+        )
+        self.location = CampusLocation.objects.create(
+            institution=self.institution,
+            name="Block 34 Innovator Lab"
+        )
+        self.student = User.objects.create_user(
+            username="priya_2024",
+            email="priya@lpu.in",
+            password="Password123!",
+            student_id="12001122",
+            role=User.ROLE_STUDENT,
+            institution=self.institution
+        )
+        self.other_student = User.objects.create_user(
+            username="rohit_2024",
+            email="rohit@lpu.in",
+            password="Password123!",
+            student_id="12009988",
+            role=User.ROLE_STUDENT,
+            institution=self.institution
+        )
+        self.staff_user = User.objects.create_user(
+            username="security_officer",
+            email="security@lpu.in",
+            password="Password123!",
+            role=User.ROLE_STAFF,
+            institution=self.institution
+        )
+
+    def test_default_priority_and_metadata(self):
+        """Item defaults to medium priority and priority_meta provides proper attributes."""
+        item = Item.objects.create(
+            title="Standard Notebook",
+            category=self.category_stationery,
+            location=self.location,
+            user=self.student,
+            institution=self.institution,
+            date_lost_or_found=timezone.localdate(),
+            description="Blue spiral notebook."
+        )
+        self.assertEqual(item.priority, Item.PRIORITY_MEDIUM)
+        meta = item.priority_meta
+        self.assertEqual(meta['code'], Item.PRIORITY_MEDIUM)
+        self.assertEqual(meta['label'], 'Medium')
+        self.assertEqual(meta['badge_class'], 'badge-priority-medium')
+
+    def test_smart_priority_suggestions(self):
+        """PriorityService correctly suggests priorities and protects against misclassifying standard electronics as critical."""
+        # High urgency items
+        self.assertEqual(PriorityService.suggest_priority("Campus Student ID Card", "Cards & Documents"), Item.PRIORITY_HIGH)
+        self.assertEqual(PriorityService.suggest_priority("Apple iPhone 15 Pro", "Electronics"), Item.PRIORITY_HIGH)
+        self.assertEqual(PriorityService.suggest_priority("Dell XPS 15 Laptop", "Electronics"), Item.PRIORITY_HIGH)
+        self.assertEqual(PriorityService.suggest_priority("Brown Leather Wallet with Cash", "Bags & Wallets"), Item.PRIORITY_HIGH)
+        self.assertEqual(PriorityService.suggest_priority("Original Degree Certificate Marksheet", "Cards & Documents"), Item.PRIORITY_HIGH)
+
+        # Medium urgency items
+        self.assertEqual(PriorityService.suggest_priority("Data Structures Textbook", "Books"), Item.PRIORITY_MEDIUM)
+        self.assertEqual(PriorityService.suggest_priority("Wildcraft Backpack", "Bags"), Item.PRIORITY_MEDIUM)
+
+        # Low urgency items
+        self.assertEqual(PriorityService.suggest_priority("Milton Stainless Steel Water Bottle", "Personal Items"), Item.PRIORITY_LOW)
+        self.assertEqual(PriorityService.suggest_priority("Pencil Box with Pens", "Stationery"), Item.PRIORITY_LOW)
+
+        # Critical urgency items (life-safety / essential health)
+        self.assertEqual(PriorityService.suggest_priority("Asthma Inhaler Medication", "Medical"), Item.PRIORITY_CRITICAL)
+        self.assertEqual(PriorityService.suggest_priority("Insulin Injection Pen", "Health"), Item.PRIORITY_CRITICAL)
+
+        # Ordinary electronics must NOT be critical
+        self.assertNotEqual(PriorityService.suggest_priority("USB-C Charging Cable", "Electronics"), Item.PRIORITY_CRITICAL)
+        self.assertNotEqual(PriorityService.suggest_priority("Logitech Wireless Mouse", "Electronics"), Item.PRIORITY_CRITICAL)
+        self.assertNotEqual(PriorityService.suggest_priority("Dell Laptop 65W Power Adapter", "Electronics"), Item.PRIORITY_CRITICAL)
+
+    def test_report_item_with_custom_priority(self):
+        """Reporting an item with explicitly selected priority stores it accurately."""
+        self.client.force_login(self.student)
+        res = self.client.post(reverse('items:report_item', kwargs={'report_type': 'lost'}), {
+            'title': 'Emergency Heart Medication & Inhaler',
+            'category': self.category_stationery.pk,
+            'priority': Item.PRIORITY_CRITICAL,
+            'location': self.location.pk,
+            'location_details': 'Lab 3',
+            'date_lost_or_found': timezone.localdate(),
+            'description': 'Essential daily medication.',
+            'contact_preference': Item.CONTACT_CAMPUS_DESK,
+        })
+        self.assertEqual(res.status_code, 302)
+        created_item = Item.objects.filter(title='Emergency Heart Medication & Inhaler').first()
+        self.assertIsNotNone(created_item)
+        self.assertEqual(created_item.priority, Item.PRIORITY_CRITICAL)
+
+    def test_student_cannot_change_priority_on_edit(self):
+        """Students cannot modify priority on existing items; original priority is preserved."""
+        item = Item.objects.create(
+            title="Black Lenovo Laptop",
+            category=self.category_electronics,
+            priority=Item.PRIORITY_HIGH,
+            location=self.location,
+            user=self.student,
+            institution=self.institution,
+            date_lost_or_found=timezone.localdate(),
+            description="Lenovo ThinkPad"
+        )
+        self.client.force_login(self.student)
+        res = self.client.post(reverse('items:item_edit', kwargs={'pk': item.pk}), {
+            'title': 'Black Lenovo Laptop Updated',
+            'category': self.category_electronics.pk,
+            'priority': Item.PRIORITY_CRITICAL,  # Student tries to elevate to Critical
+            'location': self.location.pk,
+            'location_details': 'Updated details',
+            'date_lost_or_found': timezone.localdate(),
+            'description': 'Updated description',
+            'contact_preference': Item.CONTACT_CAMPUS_DESK,
+        })
+        self.assertEqual(res.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.title, 'Black Lenovo Laptop Updated')
+        # Priority should remain HIGH, student modification blocked
+        self.assertEqual(item.priority, Item.PRIORITY_HIGH)
+
+    def test_staff_can_override_priority(self):
+        """Authorized staff can update report priority via the moderator endpoint."""
+        item = Item.objects.create(
+            title="Misplaced Prescription Bag",
+            category=self.category_bags,
+            priority=Item.PRIORITY_LOW,
+            location=self.location,
+            user=self.student,
+            institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+        # Non-staff student attempt is rejected
+        self.client.force_login(self.student)
+        fail_res = self.client.post(reverse('items:item_update_priority', kwargs={'pk': item.pk}), {
+            'priority': Item.PRIORITY_CRITICAL,
+            'remarks': 'I want critical priority'
+        })
+        self.assertEqual(fail_res.status_code, 403)
+        item.refresh_from_db()
+        self.assertEqual(item.priority, Item.PRIORITY_LOW)
+
+        # Staff officer updates priority successfully
+        self.client.force_login(self.staff_user)
+        success_res = self.client.post(reverse('items:item_update_priority', kwargs={'pk': item.pk}), {
+            'priority': Item.PRIORITY_CRITICAL,
+            'remarks': 'Elevated by security desk due to urgent prescription medicine.'
+        })
+        self.assertEqual(success_res.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.priority, Item.PRIORITY_CRITICAL)
+
+        # Audit log is created
+        log = item.history.filter(remarks__icontains="Elevated by security desk").first()
+        self.assertIsNotNone(log)
+        self.assertEqual(log.changed_by, self.staff_user)
+
+    def test_priority_filtering_and_sorting(self):
+        """Test filtering and ordering by priority on Lost Items directory and My Reports."""
+        # Create items across priority levels
+        i_low = Item.objects.create(
+            title="Plastic Water Bottle",
+            report_type=Item.REPORT_TYPE_LOST,
+            category=self.category_stationery,
+            priority=Item.PRIORITY_LOW,
+            location=self.location,
+            user=self.student,
+            institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+        i_med = Item.objects.create(
+            title="Blue Backpack",
+            report_type=Item.REPORT_TYPE_LOST,
+            category=self.category_bags,
+            priority=Item.PRIORITY_MEDIUM,
+            location=self.location,
+            user=self.student,
+            institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+        i_high = Item.objects.create(
+            title="Student RFID Smartcard",
+            report_type=Item.REPORT_TYPE_LOST,
+            category=self.category_docs,
+            priority=Item.PRIORITY_HIGH,
+            location=self.location,
+            user=self.student,
+            institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+        i_crit = Item.objects.create(
+            title="Insulin Case with Syringes",
+            report_type=Item.REPORT_TYPE_LOST,
+            category=self.category_stationery,
+            priority=Item.PRIORITY_CRITICAL,
+            location=self.location,
+            user=self.student,
+            institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+
+        # 1. Filter by Priority
+        res_crit = self.client.get(reverse('items:lost_items') + '?priority=critical')
+        self.assertEqual(res_crit.status_code, 200)
+        items_crit = list(res_crit.context['page_obj'])
+        self.assertIn(i_crit, items_crit)
+        self.assertNotIn(i_low, items_crit)
+        self.assertNotIn(i_med, items_crit)
+        self.assertNotIn(i_high, items_crit)
+
+        # 2. Sort Highest Priority First (Critical -> High -> Medium -> Low)
+        res_sort_desc = self.client.get(reverse('items:lost_items') + '?sort=priority_desc')
+        self.assertEqual(res_sort_desc.status_code, 200)
+        sort_desc_pks = [item.pk for item in res_sort_desc.context['page_obj']]
+        self.assertEqual(sort_desc_pks, [i_crit.pk, i_high.pk, i_med.pk, i_low.pk])
+
+        # 3. Sort Lowest Priority First (Low -> Medium -> High -> Critical)
+        res_sort_asc = self.client.get(reverse('items:lost_items') + '?sort=priority_asc')
+        self.assertEqual(res_sort_asc.status_code, 200)
+        sort_asc_pks = [item.pk for item in res_sort_asc.context['page_obj']]
+        self.assertEqual(sort_asc_pks, [i_low.pk, i_med.pk, i_high.pk, i_crit.pk])
+
+        # 4. My Reports priority filter and sorting
+        self.client.force_login(self.student)
+        res_my_reports = self.client.get(reverse('items:my_reports') + '?sort=priority_desc')
+        self.assertEqual(res_my_reports.status_code, 200)
+        my_pks = [item.pk for item in res_my_reports.context['page_obj']]
+        self.assertEqual(my_pks, [i_crit.pk, i_high.pk, i_med.pk, i_low.pk])
+
+    def test_dashboard_priority_counts(self):
+        """Dashboard dynamically computes accurate priority counts from the database."""
+        Item.objects.create(
+            title="Crit 1", priority=Item.PRIORITY_CRITICAL, user=self.student,
+            category=self.category_docs, location=self.location, institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+        Item.objects.create(
+            title="Crit 2", priority=Item.PRIORITY_CRITICAL, user=self.student,
+            category=self.category_docs, location=self.location, institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+        Item.objects.create(
+            title="High 1", priority=Item.PRIORITY_HIGH, user=self.student,
+            category=self.category_docs, location=self.location, institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+        Item.objects.create(
+            title="Med 1", priority=Item.PRIORITY_MEDIUM, user=self.student,
+            category=self.category_docs, location=self.location, institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+        Item.objects.create(
+            title="Low 1", priority=Item.PRIORITY_LOW, user=self.student,
+            category=self.category_docs, location=self.location, institution=self.institution,
+            date_lost_or_found=timezone.localdate()
+        )
+
+        self.client.force_login(self.student)
+        res = self.client.get(reverse('items:dashboard'))
+        self.assertEqual(res.status_code, 200)
+        p_counts = res.context['priority_counts']
+        self.assertEqual(p_counts['critical'], 2)
+        self.assertEqual(p_counts['high'], 1)
+        self.assertEqual(p_counts['medium'], 1)
+        self.assertEqual(p_counts['low'], 1)
+
+    def test_user_requested_submissions_flow(self):
+        """
+        Verify the complete submission flow for the user's specific test items:
+        1. Aadhaar card with High priority
+        2. Mobile phone with Critical priority
+        3. Laptop with High priority
+        4. Normal item with Low priority
+        Verify each is saved in PostgreSQL and displayed with correct priority on Lost Items and My Reports.
+        """
+        self.client.force_login(self.student)
+        today = timezone.localdate()
+
+        # 1. Aadhaar card with High priority
+        res1 = self.client.post(reverse('items:report_item', kwargs={'report_type': 'lost'}), {
+            'title': 'Original Aadhaar Card',
+            'category': self.category_docs.pk,
+            'priority': 'high',
+            'location': self.location.pk,
+            'location_details': 'Near Admin Block Counter 2',
+            'date_lost_or_found': today,
+            'description': 'Laminated government UIDAI Aadhaar card in a blue sleeve.',
+            'contact_preference': Item.CONTACT_EMAIL,
+        })
+        self.assertEqual(res1.status_code, 302)
+        aadhaar = Item.objects.filter(title='Original Aadhaar Card').first()
+        self.assertIsNotNone(aadhaar)
+        self.assertEqual(aadhaar.priority, Item.PRIORITY_HIGH)
+
+        # 2. Mobile phone with Critical priority (testing capitalized 'Critical')
+        res2 = self.client.post(reverse('items:report_item', kwargs={'report_type': 'lost'}), {
+            'title': 'Apple iPhone 15 Pro Max',
+            'category': self.category_electronics.pk,
+            'priority': 'Critical',
+            'location': self.location.pk,
+            'location_details': 'Innovator Lab Table 4',
+            'date_lost_or_found': today,
+            'description': 'Natural Titanium color with black OtterBox case.',
+            'contact_preference': Item.CONTACT_CAMPUS_DESK,
+        })
+        self.assertEqual(res2.status_code, 302)
+        phone = Item.objects.filter(title='Apple iPhone 15 Pro Max').first()
+        self.assertIsNotNone(phone)
+        self.assertEqual(phone.priority, Item.PRIORITY_CRITICAL)
+
+        # 3. Laptop with High priority (testing capitalized 'High')
+        res3 = self.client.post(reverse('items:report_item', kwargs={'report_type': 'lost'}), {
+            'title': 'Dell XPS 15 9530 Laptop',
+            'category': self.category_electronics.pk,
+            'priority': 'High',
+            'location': self.location.pk,
+            'location_details': 'CSE Lab 3 near windows',
+            'date_lost_or_found': today,
+            'description': 'Silver metal finish with Python and GitHub stickers.',
+            'contact_preference': Item.CONTACT_BOTH,
+            'contact_phone': '+91 98765 43210',
+            'contact_email': 'priya@lpu.in',
+        })
+        self.assertEqual(res3.status_code, 302)
+        laptop = Item.objects.filter(title='Dell XPS 15 9530 Laptop').first()
+        self.assertIsNotNone(laptop)
+        self.assertEqual(laptop.priority, Item.PRIORITY_HIGH)
+
+        # 4. Normal item with Low priority (testing 'Low')
+        res4 = self.client.post(reverse('items:report_item', kwargs={'report_type': 'lost'}), {
+            'title': 'Milton Stainless Steel Water Bottle',
+            'category': self.category_stationery.pk,
+            'priority': 'Low',
+            'location': self.location.pk,
+            'location_details': 'Library ground floor shelf',
+            'date_lost_or_found': today,
+            'description': 'Silver 1000ml flask with small scratch at the base.',
+            'contact_preference': Item.CONTACT_EMAIL,
+        })
+        self.assertEqual(res4.status_code, 302)
+        bottle = Item.objects.filter(title='Milton Stainless Steel Water Bottle').first()
+        self.assertIsNotNone(bottle)
+        self.assertEqual(bottle.priority, Item.PRIORITY_LOW)
+
+        # Verify on Lost Items page
+        lost_page = self.client.get(reverse('items:lost_items'))
+        self.assertEqual(lost_page.status_code, 200)
+        self.assertContains(lost_page, 'Original Aadhaar Card')
+        self.assertContains(lost_page, 'Apple iPhone 15 Pro Max')
+        self.assertContains(lost_page, 'Dell XPS 15 9530 Laptop')
+        self.assertContains(lost_page, 'Milton Stainless Steel Water Bottle')
+        self.assertContains(lost_page, 'badge-priority-critical')
+        self.assertContains(lost_page, 'badge-priority-high')
+        self.assertContains(lost_page, 'badge-priority-low')
+
+        # Verify on My Reports page
+        my_reports_page = self.client.get(reverse('items:my_reports'))
+        self.assertEqual(my_reports_page.status_code, 200)
+        self.assertContains(my_reports_page, 'Original Aadhaar Card')
+        self.assertContains(my_reports_page, 'Apple iPhone 15 Pro Max')
+        self.assertContains(my_reports_page, 'Dell XPS 15 9530 Laptop')
+        self.assertContains(my_reports_page, 'Milton Stainless Steel Water Bottle')
+
+    def test_validation_errors_preserve_values_and_give_specific_feedback(self):
+        """When validation fails, errors are specific, values are preserved, and generic error is replaced."""
+        self.client.force_login(self.student)
+        # Post with missing description and invalid future date
+        future_date = timezone.localdate() + timedelta(days=5)
+        res = self.client.post(reverse('items:report_item', kwargs={'report_type': 'lost'}), {
+            'title': 'Sony WH-1000XM5 Headphones',
+            'category': self.category_electronics.pk,
+            'priority': 'high',
+            'location': self.location.pk,
+            'date_lost_or_found': future_date,
+            'description': '',  # Blank description
+            'contact_preference': Item.CONTACT_EMAIL,
+        })
+        self.assertEqual(res.status_code, 200)
+        form = res.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('description', form.errors)
+        self.assertIn('date_lost_or_found', form.errors)
+        # Verify title and priority values are preserved in form
+        self.assertEqual(form['title'].value(), 'Sony WH-1000XM5 Headphones')
+        self.assertEqual(form['priority'].value(), 'high')
+        # Check rendered HTML contains specific error messages
+        self.assertContains(res, 'The date cannot be in the future.')
+        self.assertContains(res, 'Please provide a detailed description')
 
 

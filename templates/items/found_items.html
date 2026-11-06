@@ -69,11 +69,26 @@
         </select>
       </div>
 
+      <!-- Priority Filter -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem;">Priority</label>
+        <select name="priority" class="form-select">
+          <option value="">All Priorities</option>
+          {% for code, label in priority_choices %}
+            <option value="{{ code }}" {% if filters.priority == code %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
       <!-- Sort Filter -->
       <div>
         <label class="form-label" style="font-size: 0.8rem;">Sort By</label>
         <select name="sort" class="form-select">
           <option value="-created_at" {% if filters.sort == '-created_at' %}selected{% endif %}>Newest Reported</option>
+          <option value="priority_desc" {% if filters.sort == 'priority_desc' %}selected{% endif %}>Highest Priority First</option>
+          <option value="priority_asc" {% if filters.sort == 'priority_asc' %}selected{% endif %}>Lowest Priority First</option>
           <option value="-date_lost_or_found" {% if filters.sort == '-date_lost_or_found' %}selected{% endif %}>Date Found (Recent)</option>
           <option value="date_lost_or_found" {% if filters.sort == 'date_lost_or_found' %}selected{% endif %}>Date Found (Oldest)</option>
         </select>
@@ -109,8 +124,13 @@
           {% endif %}
         </div>
         <div class="item-info">
-          <div style="font-size: 0.775rem; font-weight: 600; color: var(--accent-found); margin-bottom: 0.25rem;">
-            {{ item.category.name }}
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; gap: 0.5rem;">
+            <div style="font-size: 0.775rem; font-weight: 600; color: var(--accent-found); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+              {{ item.category.name }}
+            </div>
+            <span class="badge badge-priority-{{ item.priority }}" style="font-size: 0.7rem; padding: 0.15rem 0.5rem; white-space: nowrap;">
+              <i class="fa-solid fa-flag" style="font-size: 0.65rem;"></i> {{ item.get_priority_display }}
+            </span>
           </div>
           <h3 class="item-title">
             <a href="{% url 'items:item_detail' item.pk %}">{{ item.title }}</a>
@@ -149,7 +169,7 @@
   {% if page_obj.has_other_pages %}
     <div class="pagination">
       {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}&q={{ filters.q }}&category={{ filters.category_id }}&location={{ filters.location_id }}&status={{ filters.status }}&sort={{ filters.sort }}" class="page-link">
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ filters.q }}&category={{ filters.category_id }}&location={{ filters.location_id }}&priority={{ filters.priority }}&status={{ filters.status }}&sort={{ filters.sort }}" class="page-link">
           <i class="fa-solid fa-chevron-left"></i>
         </a>
       {% endif %}
@@ -158,12 +178,12 @@
         {% if page_obj.number == num %}
           <span class="page-link active">{{ num }}</span>
         {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-          <a href="?page={{ num }}&q={{ filters.q }}&category={{ filters.category_id }}&location={{ filters.location_id }}&status={{ filters.status }}&sort={{ filters.sort }}" class="page-link">{{ num }}</a>
+          <a href="?page={{ num }}&q={{ filters.q }}&category={{ filters.category_id }}&location={{ filters.location_id }}&priority={{ filters.priority }}&status={{ filters.status }}&sort={{ filters.sort }}" class="page-link">{{ num }}</a>
         {% endif %}
       {% endfor %}
 
       {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}&q={{ filters.q }}&category={{ filters.category_id }}&location={{ filters.location_id }}&status={{ filters.status }}&sort={{ filters.sort }}" class="page-link">
+        <a href="?page={{ page_obj.next_page_number }}&q={{ filters.q }}&category={{ filters.category_id }}&location={{ filters.location_id }}&priority={{ filters.priority }}&status={{ filters.status }}&sort={{ filters.sort }}" class="page-link">
           <i class="fa-solid fa-chevron-right"></i>
         </a>
       {% endif %}

@@ -93,6 +93,26 @@
         </select>
       </div>
 
+      <div>
+        <label class="form-label" style="font-size:0.8rem;">Priority</label>
+        <select name="priority" class="form-select">
+          <option value="">All Priorities</option>
+          {% for code, label in priority_choices %}
+            <option value="{{ code }}" {% if current_priority == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" style="font-size:0.8rem;">Sort By</label>
+        <select name="sort" class="form-select">
+          <option value="-created_at" {% if current_sort == '-created_at' %}selected{% endif %}>Newest First</option>
+          <option value="priority_desc" {% if current_sort == 'priority_desc' %}selected{% endif %}>Highest Priority First</option>
+          <option value="priority_asc" {% if current_sort == 'priority_asc' %}selected{% endif %}>Lowest Priority First</option>
+          <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+        </select>
+      </div>
+
       <div style="display: flex; gap: 0.5rem;">
         <button type="submit" class="btn btn-primary" style="flex:1;">
           <i class="fa-solid fa-filter"></i> Filter
@@ -117,6 +137,7 @@
               <th style="padding: 1rem 1rem;">Type</th>
               <th style="padding: 1rem 1rem;">Reporter</th>
               <th style="padding: 1rem 1rem;">Location</th>
+              <th style="padding: 1rem 1rem; text-align: center;">Priority</th>
               <th style="padding: 1rem 1rem;">Status</th>
               <th style="padding: 1rem 1rem;">Expires At</th>
               <th style="padding: 1rem 1.25rem; text-align: right;">Manage</th>
@@ -149,6 +170,9 @@
                 <td style="padding: 1rem 1rem; color: var(--text-muted);">
                   {{ item.location.name|default:"Campus" }}
                 </td>
+                <td style="padding: 1rem 1rem; text-align: center;">
+                  <span class="badge badge-priority-{{ item.priority }}">{{ item.get_priority_display }}</span>
+                </td>
                 <td style="padding: 1rem 1rem;">
                   <span class="badge badge-{{ item.status }}">{{ item.get_status_display }}</span>
                 </td>
@@ -179,7 +203,7 @@
         <div style="padding: 1.25rem;">
           <div class="pagination" style="margin-top:0;">
             {% if page_obj.has_previous %}
-              <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&type={{ current_type }}&status={{ current_status }}" class="page-link">
+              <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&type={{ current_type }}&status={{ current_status }}&priority={{ current_priority }}&sort={{ current_sort }}" class="page-link">
                 <i class="fa-solid fa-chevron-left"></i>
               </a>
             {% endif %}
@@ -188,12 +212,12 @@
               {% if page_obj.number == num %}
                 <span class="page-link active">{{ num }}</span>
               {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <a href="?page={{ num }}&q={{ q }}&type={{ current_type }}&status={{ current_status }}" class="page-link">{{ num }}</a>
+                <a href="?page={{ num }}&q={{ q }}&type={{ current_type }}&status={{ current_status }}&priority={{ current_priority }}&sort={{ current_sort }}" class="page-link">{{ num }}</a>
               {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
-              <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&type={{ current_type }}&status={{ current_status }}" class="page-link">
+              <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&type={{ current_type }}&status={{ current_status }}&priority={{ current_priority }}&sort={{ current_sort }}" class="page-link">
                 <i class="fa-solid fa-chevron-right"></i>
               </a>
             {% endif %}

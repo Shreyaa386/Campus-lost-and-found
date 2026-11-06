@@ -7,7 +7,42 @@ from core.models import CampusLocation, Category
 from .models import Claim, Item, ItemMatch
 
 
+class PriorityChoiceField(forms.ChoiceField):
+    """
+    Robust priority choice field for lost and found reports.
+    Accepts both lowercase ('high') and capitalized/mixed-case ('High', 'CRITICAL') inputs,
+    normalizing smoothly to canonical Item.PRIORITY_* choice keys ('critical', 'high', 'medium', 'low').
+    Falls back to 'medium' when blank or omitted.
+    """
+    def to_python(self, value):
+        if not value:
+            return Item.PRIORITY_MEDIUM
+        val_clean = str(value).strip().lower()
+        valid_map = {k.lower(): k for k in dict(Item.PRIORITY_CHOICES).keys()}
+        for code, label in Item.PRIORITY_CHOICES:
+            valid_map[label.lower()] = code
+        return valid_map.get(val_clean, val_clean)
+
+    def validate(self, value):
+        val_clean = str(value).strip().lower() if value else Item.PRIORITY_MEDIUM
+        allowed_keys = set(dict(Item.PRIORITY_CHOICES).keys())
+        if val_clean not in allowed_keys:
+            allowed_labels = [label for _, label in Item.PRIORITY_CHOICES]
+            raise ValidationError(
+                f"Select a valid priority option. Allowed choices are: {', '.join(allowed_labels)}."
+            )
+
+
 class ItemReportForm(forms.ModelForm):
+    # Urgency & Priority level with automatic case normalization and medium fallback
+    priority = PriorityChoiceField(
+        choices=Item.PRIORITY_CHOICES,
+        initial=Item.PRIORITY_MEDIUM,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'itemPrioritySelect'}),
+        help_text="Set the priority according to the importance and urgency of this item."
+    )
+
     # Optional verification prompts when reporting a found item
     verification_q1 = forms.CharField(
         label="Ownership Question 1 (Optional)",
@@ -32,6 +67,7 @@ class ItemReportForm(forms.ModelForm):
         fields = [
             'title',
             'category',
+            'priority',
             'location',
             'location_details',
             'date_lost_or_found',
@@ -45,9 +81,10 @@ class ItemReportForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'e.g. Blue Dell Laptop with stickers, Silver Keychain, Casio Watch'
+                'placeholder': 'e.g. Blue Dell Laptop with stickers, Silver Keychain, Casio Watch',
+                'required': 'required'
             }),
-            'category': forms.Select(attrs={'class': 'form-select'}),
+            'category': forms.Select(attrs={'class': 'form-select', 'id': 'itemCategorySelect', 'required': 'required'}),
             'location': forms.Select(attrs={'class': 'form-select'}),
             'location_details': forms.TextInput(attrs={
                 'class': 'form-input',
@@ -55,18 +92,20 @@ class ItemReportForm(forms.ModelForm):
             }),
             'date_lost_or_found': forms.DateInput(attrs={
                 'class': 'form-input',
-                'type': 'date'
+                'type': 'date',
+                'required': 'required'
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-textarea',
                 'rows': 4,
-                'placeholder': 'Provide detailed descriptions, unique scratches, model numbers, contents, brand, color...'
+                'placeholder': 'Provide detailed descriptions, unique scratches, model numbers, contents, brand, color...',
+                'required': 'required'
             }),
             'image': forms.FileInput(attrs={
                 'class': 'form-file-input',
                 'accept': 'image/*'
             }),
-            'contact_preference': forms.Select(attrs={'class': 'form-select'}),
+            'contact_preference': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'contact_phone': forms.TextInput(attrs={
                 'class': 'form-input',
                 'placeholder': '+91 98765 43210 (Optional if using profile phone)'
@@ -76,12 +115,31 @@ class ItemReportForm(forms.ModelForm):
                 'placeholder': 'your-email@campus.edu (Optional if using profile email)'
             }),
         }
+        error_messages = {
+            'title': {
+                'required': 'Please provide a title for the reported item.',
+            },
+            'description': {
+                'required': 'Please provide a detailed description of the item.',
+            },
+            'category': {
+                'required': 'Please select an item category.',
+            },
+            'date_lost_or_found': {
+                'required': 'Please select the date when the item was lost or found.',
+                'invalid': 'Please enter a valid date in YYYY-MM-DD format.',
+            },
+            'contact_preference': {
+                'required': 'Please choose a contact preference.',
+            },
+        }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         self.report_type = kwargs.pop('report_type', Item.REPORT_TYPE_LOST)
         super().__init__(*args, **kwargs)
 
+        # Scoped Category and Location querysets based on campus affiliation
         if self.user and hasattr(self.user, 'institution') and self.user.institution:
             self.fields['location'].queryset = CampusLocation.objects.filter(
                 institution=self.user.institution,
@@ -95,8 +153,27 @@ class ItemReportForm(forms.ModelForm):
             self.fields['category'].queryset = Category.objects.filter(is_active=True)
             self.fields['location'].queryset = CampusLocation.objects.filter(is_active=True)
 
+        self.fields['category'].empty_label = "Select an item category"
+        self.fields['location'].empty_label = "Select campus location (Optional)"
+        self.fields['category'].required = True
+        self.fields['title'].required = True
+        self.fields['description'].required = True
+        self.fields['date_lost_or_found'].required = True
+
         if not self.initial.get('date_lost_or_found'):
             self.fields['date_lost_or_found'].initial = timezone.localdate()
+
+        # Priority setup & edit restrictions
+        self.fields['priority'].required = False
+        self.fields['priority'].widget.attrs['required'] = 'required'
+        self.fields['priority'].help_text = "Set the priority according to the importance and urgency of this item."
+        if not self.initial.get('priority') and not (self.instance and self.instance.pk):
+            self.fields['priority'].initial = Item.PRIORITY_MEDIUM
+
+        is_staff_user = self.user and getattr(self.user, 'is_staff_member', False)
+        if self.instance and self.instance.pk and not is_staff_user:
+            self.fields['priority'].disabled = True
+            self.fields['priority'].help_text = "Priority cannot be modified after initial submission. Please contact Campus Security if reclassification is required."
 
         if self.report_type == Item.REPORT_TYPE_LOST:
             self.fields['date_lost_or_found'].label = "Date Lost"
@@ -116,17 +193,74 @@ class ItemReportForm(forms.ModelForm):
                 if len(qs) > 1:
                     self.fields['verification_q2'].initial = qs[1]
 
-        if self.user and not self.instance.pk:
+        if self.user and not (self.instance and self.instance.pk):
             if not self.initial.get('contact_email') and self.user.email:
                 self.fields['contact_email'].initial = self.user.email
             if not self.initial.get('contact_phone') and hasattr(self.user, 'phone_number') and self.user.phone_number:
                 self.fields['contact_phone'].initial = self.user.phone_number
 
+    def clean_title(self):
+        title = self.cleaned_data.get('title', '').strip()
+        if not title:
+            raise ValidationError("Please provide a title for the reported item.")
+        if len(title) < 2:
+            raise ValidationError("Item title must be at least 2 characters long.")
+        return title
+
+    def clean_description(self):
+        desc = self.cleaned_data.get('description', '').strip()
+        if not desc:
+            raise ValidationError("Please provide a detailed description of the item.")
+        if len(desc) < 5:
+            raise ValidationError("Description must be at least 5 characters long to help identify the item.")
+        return desc
+
+    def clean_priority(self):
+        is_staff_user = self.user and getattr(self.user, 'is_staff_member', False)
+        if self.instance and self.instance.pk and not is_staff_user:
+            return self.instance.priority
+        priority = self.cleaned_data.get('priority')
+        if not priority:
+            return getattr(self.instance, 'priority', Item.PRIORITY_MEDIUM) or Item.PRIORITY_MEDIUM
+        norm_val = str(priority).strip().lower()
+        if norm_val in dict(Item.PRIORITY_CHOICES):
+            return norm_val
+        return Item.PRIORITY_MEDIUM
+
     def clean_date_lost_or_found(self):
         item_date = self.cleaned_data.get('date_lost_or_found')
-        if item_date and item_date > timezone.localdate():
+        if not item_date:
+            raise ValidationError("Please select the date when the item was lost or found.")
+        if item_date > timezone.localdate():
             raise ValidationError("The date cannot be in the future.")
         return item_date
+
+    def clean_contact_preference(self):
+        pref = self.cleaned_data.get('contact_preference')
+        if not pref:
+            return Item.CONTACT_EMAIL
+        return pref
+
+    def clean(self):
+        cleaned_data = super().clean()
+        pref = cleaned_data.get('contact_preference') or Item.CONTACT_EMAIL
+        phone = (cleaned_data.get('contact_phone') or '').strip()
+        email = (cleaned_data.get('contact_email') or '').strip()
+
+        # Automatically fall back to authenticated user's contact information
+        if self.user:
+            if not email and self.user.email:
+                cleaned_data['contact_email'] = self.user.email
+                email = self.user.email
+            if not phone and hasattr(self.user, 'phone_number') and self.user.phone_number:
+                cleaned_data['contact_phone'] = self.user.phone_number
+                phone = self.user.phone_number
+
+        if pref == Item.CONTACT_PHONE and not phone:
+            self.add_error('contact_phone', "Please provide a contact phone number when 'Phone Only' is selected.")
+        if pref in [Item.CONTACT_EMAIL, Item.CONTACT_BOTH] and not email:
+            self.add_error('contact_email', "Please provide a valid contact email address.")
+        return cleaned_data
 
     def clean_image(self):
         img_file = self.cleaned_data.get('image')
@@ -190,6 +324,26 @@ class ItemStatusUpdateForm(forms.Form):
             self.fields['status'].choices = allowed
 
         self.fields['status'].initial = current_status
+
+
+class ItemPriorityUpdateForm(forms.Form):
+    """Form for administrators or campus security staff to update item priority."""
+    priority = PriorityChoiceField(
+        choices=Item.PRIORITY_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    remarks = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Optional reason for priority change...'
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        current_priority = kwargs.pop('current_priority', Item.PRIORITY_MEDIUM)
+        super().__init__(*args, **kwargs)
+        self.fields['priority'].initial = current_priority
 
 
 class ClaimSubmissionForm(forms.ModelForm):

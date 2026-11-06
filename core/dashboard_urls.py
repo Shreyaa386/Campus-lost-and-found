@@ -18,6 +18,7 @@ urlpatterns = [
     # Item Governance & Archival
     path('items/', views_admin.item_management_list_view, name='items'),
     path('items/<int:item_id>/archive/', views_admin.item_archive_view, name='item_archive'),
+    path('items/<int:item_id>/priority/', views_admin.item_update_priority_admin_view, name='item_priority_update'),
     path('categories/', views_admin.category_management_view, name='categories'),
     path('locations/', views_admin.location_management_view, name='locations'),
 

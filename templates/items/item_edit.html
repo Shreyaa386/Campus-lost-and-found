@@ -60,6 +60,30 @@
           </div>
         </div>
 
+        <!-- Priority Field -->
+        <div class="form-group">
+          <label for="{{ form.priority.id_for_label }}" class="form-label">
+            Priority Level
+          </label>
+          {% if user.is_staff_member %}
+            {{ form.priority }}
+            {% if form.priority.errors %}
+              <div class="form-error">{{ form.priority.errors.0 }}</div>
+            {% endif %}
+            <div class="form-help">Authorized staff: you may update this report's priority level.</div>
+          {% else %}
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <span class="badge badge-priority-{{ item.priority }}">
+                <i class="fa-solid fa-flag"></i> {{ item.get_priority_display }}
+              </span>
+              <span style="font-size: 0.8rem; color: #64748b;">
+                Priority cannot be modified after initial submission. Contact Campus Security if urgency reclassification is needed.
+              </span>
+            </div>
+            <div style="display:none;">{{ form.priority }}</div>
+          {% endif %}
+        </div>
+
         <!-- Campus Location -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
           <div class="form-group">

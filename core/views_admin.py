@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -273,6 +273,37 @@ def item_management_list_view(request):
     if location_id:
         items_qs = items_qs.filter(location_id=location_id)
 
+    priority_filter = request.GET.get('priority', '').strip()
+    if priority_filter and priority_filter in dict(Item.PRIORITY_CHOICES):
+        items_qs = items_qs.filter(priority=priority_filter)
+
+    sort = request.GET.get('sort', '-created_at').strip()
+    priority_order_desc = Case(
+        When(priority=Item.PRIORITY_CRITICAL, then=Value(1)),
+        When(priority=Item.PRIORITY_HIGH, then=Value(2)),
+        When(priority=Item.PRIORITY_MEDIUM, then=Value(3)),
+        When(priority=Item.PRIORITY_LOW, then=Value(4)),
+        default=Value(5),
+        output_field=IntegerField(),
+    )
+    priority_order_asc = Case(
+        When(priority=Item.PRIORITY_LOW, then=Value(1)),
+        When(priority=Item.PRIORITY_MEDIUM, then=Value(2)),
+        When(priority=Item.PRIORITY_HIGH, then=Value(3)),
+        When(priority=Item.PRIORITY_CRITICAL, then=Value(4)),
+        default=Value(5),
+        output_field=IntegerField(),
+    )
+
+    if sort in ['priority_desc', 'highest_priority']:
+        items_qs = items_qs.order_by(priority_order_desc, '-created_at')
+    elif sort in ['priority_asc', 'lowest_priority']:
+        items_qs = items_qs.order_by(priority_order_asc, '-created_at')
+    elif sort == 'created_at':
+        items_qs = items_qs.order_by('created_at')
+    else:
+        items_qs = items_qs.order_by('-created_at')
+
     paginator = Paginator(items_qs, 15)
     page_obj = paginator.get_page(request.GET.get('page', 1))
 
@@ -284,12 +315,40 @@ def item_management_list_view(request):
         'q': q,
         'report_type': report_type,
         'status_filter': status_filter,
+        'priority_filter': priority_filter,
+        'sort': sort,
         'category_id': category_id,
         'location_id': location_id,
         'categories': categories,
         'locations': locations,
         'statuses': Item.STATUS_CHOICES,
+        'priorities': Item.PRIORITY_CHOICES,
     })
+
+
+@staff_or_admin_required
+def item_update_priority_admin_view(request, item_id):
+    """Allows staff/security to update report priority from governance dashboard."""
+    item = get_object_or_404(Item, pk=item_id)
+    if request.method == 'POST':
+        new_priority = request.POST.get('priority', '').strip()
+        remarks = request.POST.get('remarks', '').strip()
+        if new_priority in dict(Item.PRIORITY_CHOICES):
+            old_priority = item.priority
+            item.priority = new_priority
+            item.save(update_fields=['priority', 'updated_at'])
+            ItemStatusHistory.objects.create(
+                item=item,
+                changed_by=request.user,
+                old_status=item.status,
+                new_status=item.status,
+                remarks=remarks or f"Priority adjusted from {old_priority.capitalize()} to {new_priority.capitalize()} by {request.user.display_name}."
+            )
+            messages.success(request, f"Priority for '{item.title}' updated to {item.get_priority_display()}.")
+        else:
+            messages.error(request, "Invalid priority selection.")
+
+    return redirect(request.META.get('HTTP_REFERER') or 'security_dashboard:items')
 
 
 @staff_or_admin_required

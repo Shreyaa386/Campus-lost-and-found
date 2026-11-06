@@ -414,12 +414,25 @@
         </select>
       </div>
 
+      <!-- Priority Filter -->
+      <div>
+        <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #475569;">Priority</label>
+        <select name="priority" class="form-select" style="width: 100%; border-radius: 10px;">
+          <option value="">All Priorities</option>
+          {% for p_code, p_label in priority_choices %}
+            <option value="{{ p_code }}" {% if selected_priority == p_code %}selected{% endif %}>{{ p_label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
       <!-- Sort Filter -->
       <div>
         <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #475569;">Sort By</label>
         <select name="sort" class="form-select" style="width: 100%; border-radius: 10px;">
-          <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Newest Reported</option>
-          <option value="created_at" {% if selected_sort == 'created_at' %}selected{% endif %}>Oldest Reported</option>
+          <option value="priority_desc" {% if selected_sort == 'priority_desc' or selected_sort == 'highest_priority' %}selected{% endif %}>Highest Priority First</option>
+          <option value="priority_asc" {% if selected_sort == 'priority_asc' or selected_sort == 'lowest_priority' %}selected{% endif %}>Lowest Priority First</option>
+          <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Newest First</option>
+          <option value="created_at" {% if selected_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
           <option value="-date_lost_or_found" {% if selected_sort == '-date_lost_or_found' %}selected{% endif %}>Event Date (Recent)</option>
         </select>
       </div>
@@ -429,7 +442,7 @@
         <button type="submit" class="btn btn-primary" style="height: 42px; border-radius: 10px; padding: 0 1.25rem;">
           <i class="fa-solid fa-filter"></i> Filter
         </button>
-        {% if q or selected_type or selected_status or selected_sort != '-created_at' %}
+        {% if q or selected_type or selected_status or selected_priority or selected_sort != '-created_at' %}
           <a href="{% url 'items:my_reports' %}" class="btn btn-secondary" style="height: 42px; border-radius: 10px;" title="Reset Filters">
             <i class="fa-solid fa-rotate-left"></i>
           </a>
@@ -457,6 +470,7 @@
               <th>Category</th>
               <th>Campus Location</th>
               <th>Reported Date</th>
+              <th>Priority</th>
               <th>Status</th>
               <th>Claims</th>
               <th>Actions</th>
@@ -516,6 +530,13 @@
                   </span>
                 </td>
 
+                <!-- Priority -->
+                <td>
+                  <span class="badge badge-priority-{{ itm.priority }}">
+                    <i class="fa-solid fa-flag"></i> {{ itm.get_priority_display }}
+                  </span>
+                </td>
+
                 <!-- Status -->
                 <td>
                   <span class="badge badge-{{ itm.status }}">
@@ -547,9 +568,6 @@
                         <i class="fa-solid fa-pen-to-square"></i>
                       </a>
                     {% endif %}
-                    <a href="{% url 'items:item_tag' itm.pk %}" class="btn-action-icon" title="Print Item Tag">
-                      <i class="fa-solid fa-tag"></i>
-                    </a>
                     <a href="{% url 'items:recovery_timeline' itm.pk %}" class="btn-action-icon" title="Recovery Timeline">
                       <i class="fa-solid fa-timeline"></i>
                     </a>

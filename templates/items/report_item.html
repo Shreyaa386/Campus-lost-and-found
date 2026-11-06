@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-  {% if report_type == 'lost' %}Report Lost Item{% else %}Report Found Item{% endif %} — CampusCare
+{% if report_type == 'lost' %}Report Lost Item{% else %}Report Found Item{% endif %} — CampusCare
 {% endblock %}
 
 {% block content %}
@@ -10,21 +10,21 @@
   <!-- Header -->
   <div style="margin-bottom: 2rem; text-align: center;">
     {% if report_type == 'lost' %}
-      <span class="badge badge-lost" style="font-size: 0.85rem; padding: 0.35rem 0.85rem; margin-bottom: 0.5rem;">
-        <i class="fa-solid fa-circle-exclamation"></i> Lost Item Report
-      </span>
-      <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-main);">Report a Lost Valuable</h1>
-      <p style="color: var(--text-muted); font-size: 1rem; max-width: 550px; margin: 0.25rem auto 0;">
-        Describe what you lost accurately so that whoever discovers it can quickly identify and return it to you.
-      </p>
+    <span class="badge badge-lost" style="font-size: 0.85rem; padding: 0.35rem 0.85rem; margin-bottom: 0.5rem;">
+      <i class="fa-solid fa-circle-exclamation"></i> Lost Item Report
+    </span>
+    <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-main);">Report a Lost Valuable</h1>
+    <p style="color: var(--text-muted); font-size: 1rem; max-width: 550px; margin: 0.25rem auto 0;">
+      Describe what you lost accurately so that whoever discovers it can quickly identify and return it to you.
+    </p>
     {% else %}
-      <span class="badge badge-found" style="font-size: 0.85rem; padding: 0.35rem 0.85rem; margin-bottom: 0.5rem;">
-        <i class="fa-solid fa-hand-holding-heart"></i> Found Item Report
-      </span>
-      <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-main);">Report a Found Item</h1>
-      <p style="color: var(--text-muted); font-size: 1rem; max-width: 550px; margin: 0.25rem auto 0;">
-        Thank you for being a responsible campus citizen! Report the item to reconnect it with its rightful owner.
-      </p>
+    <span class="badge badge-found" style="font-size: 0.85rem; padding: 0.35rem 0.85rem; margin-bottom: 0.5rem;">
+      <i class="fa-solid fa-hand-holding-heart"></i> Found Item Report
+    </span>
+    <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-main);">Report a Found Item</h1>
+    <p style="color: var(--text-muted); font-size: 1rem; max-width: 550px; margin: 0.25rem auto 0;">
+      Thank you for being a responsible campus citizen! Report the item to reconnect it with its rightful owner.
+    </p>
     {% endif %}
   </div>
 
@@ -33,11 +33,33 @@
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
-        {% if form.non_field_errors %}
-          <div class="alert alert-error">
-            <i class="fa-solid fa-circle-exclamation"></i>
-            <div>{{ form.non_field_errors }}</div>
+        <!-- Non-Field & Form Validation Summary Box -->
+        {% if form.errors %}
+        <div class="alert alert-error"
+          style="background:#fef2f2; border:1.5px solid #fca5a5; color:#991b1b; border-radius:var(--radius-md); padding:1rem 1.25rem; margin-bottom:1.5rem;">
+          <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+            <i class="fa-solid fa-triangle-exclamation"
+              style="font-size:1.25rem; margin-top:2px; color:#dc2626; flex-shrink:0;"></i>
+            <div style="flex:1;">
+              <strong style="display:block; font-size:0.95rem; margin-bottom:0.35rem; color:#991b1b;">
+                Please review and correct the errors below:
+              </strong>
+              <ul style="margin:0; padding-left:1.25rem; font-size:0.875rem; line-height:1.6;">
+                {% for field, error_list in form.errors.items %}
+                {% if field == '__all__' %}
+                {% for error in error_list %}
+                <li>{{ error }}</li>
+                {% endfor %}
+                {% else %}
+                {% for error in error_list %}
+                <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                {% endfor %}
+                {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
           </div>
+        </div>
         {% endif %}
 
         <!-- Item Title -->
@@ -47,9 +69,13 @@
           </label>
           {{ form.title }}
           {% if form.title.errors %}
-            <div class="form-error">{{ form.title.errors.0 }}</div>
+          <div class="form-error"
+            style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+            <i class="fa-solid fa-circle-exclamation"></i> {{ form.title.errors.0 }}
+          </div>
           {% endif %}
-          <div class="form-help">Keep it descriptive: e.g. "Navy Blue Acer Predator Laptop" or "Keychain with 3 Keys & Iron Man figure".</div>
+          <div class="form-help">Keep it descriptive: e.g. "Navy Blue Acer Predator Laptop" or "Keychain with 3 Keys &
+            Iron Man figure".</div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
@@ -60,7 +86,10 @@
             </label>
             {{ form.category }}
             {% if form.category.errors %}
-              <div class="form-error">{{ form.category.errors.0 }}</div>
+            <div class="form-error"
+              style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.category.errors.0 }}
+            </div>
             {% endif %}
           </div>
 
@@ -71,9 +100,117 @@
             </label>
             {{ form.date_lost_or_found }}
             {% if form.date_lost_or_found.errors %}
-              <div class="form-error">{{ form.date_lost_or_found.errors.0 }}</div>
+            <div class="form-error"
+              style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.date_lost_or_found.errors.0 }}
+            </div>
             {% endif %}
           </div>
+        </div>
+
+        <!-- Priority Level Field -->
+        <div class="form-group" style="margin-top: 0.25rem; margin-bottom: 1.5rem;">
+          <div
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.35rem;">
+            <label for="{{ form.priority.id_for_label }}" class="form-label" style="margin-bottom:0;">
+              Urgency / Priority Level <span style="color:#ef4444;">*</span>
+            </label>
+            <span style="font-size:0.775rem; color:#64748b;">
+              Set the priority according to the importance and urgency of this item.
+            </span>
+          </div>
+
+          <!-- Select Input (Backed by Django Form) -->
+          <div style="display:none;">
+            {{ form.priority }}
+          </div>
+
+          <!-- Interactive Priority Selection Cards -->
+          <div class="priority-options-grid" id="priorityCardsGrid">
+            <!-- Critical -->
+            <div class="priority-option-card opt-critical" data-priority="critical"
+              onclick="selectPriorityOption('critical')">
+              <div class="priority-card-header">
+                <span class="priority-card-title" style="color: #b91c1c;">
+                  <i class="fa-solid fa-triangle-exclamation"></i> Critical
+                </span>
+                <span class="badge badge-priority-critical" style="font-size: 0.65rem; padding: 1px 6px;">Highest</span>
+              </div>
+              <div class="priority-card-desc">
+                Life-saving medicine, medical equipment, or vital emergency keys.
+              </div>
+            </div>
+
+            <!-- High -->
+            <div class="priority-option-card opt-high" data-priority="high" onclick="selectPriorityOption('high')">
+              <div class="priority-card-header">
+                <span class="priority-card-title" style="color: #c2410c;">
+                  <i class="fa-solid fa-circle-exclamation"></i> High
+                </span>
+                <span class="badge badge-priority-high" style="font-size: 0.65rem; padding: 1px 6px;">Urgent</span>
+              </div>
+              <div class="priority-card-desc">
+                Smartphones, laptops, wallets, ID cards, passport, or official documents.
+              </div>
+            </div>
+
+            <!-- Medium -->
+            <div class="priority-option-card opt-medium" data-priority="medium"
+              onclick="selectPriorityOption('medium')">
+              <div class="priority-card-header">
+                <span class="priority-card-title" style="color: #1d4ed8;">
+                  <i class="fa-solid fa-flag"></i> Medium
+                </span>
+                <span class="badge badge-priority-medium" style="font-size: 0.65rem; padding: 1px 6px;">Standard</span>
+              </div>
+              <div class="priority-card-desc">
+                Everyday valuables like backpacks, textbooks, clothes, or headphones.
+              </div>
+            </div>
+
+            <!-- Low -->
+            <div class="priority-option-card opt-low" data-priority="low" onclick="selectPriorityOption('low')">
+              <div class="priority-card-header">
+                <span class="priority-card-title" style="color: #15803d;">
+                  <i class="fa-solid fa-circle-info"></i> Low
+                </span>
+                <span class="badge badge-priority-low" style="font-size: 0.65rem; padding: 1px 6px;">Routine</span>
+              </div>
+              <div class="priority-card-desc">
+                Common utility items like water bottles, stationery, notebooks, or umbrellas.
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart Priority Suggestion Banner -->
+          <div class="priority-smart-suggestion" id="prioritySuggestionBanner">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color:#2563eb; font-size:1rem;"></i>
+              <span>
+                <strong>Smart Suggestion:</strong> Based on "<span id="suggestionMatchedWord"></span>", recommended
+                priority is <span id="suggestionBadge"></span>.
+              </span>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="applySuggestedPriority()"
+                style="font-size:0.75rem; padding:0.25rem 0.65rem;">
+                Apply Suggestion
+              </button>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="dismissSuggestion()"
+                style="font-size:0.75rem; padding:0.25rem 0.45rem;" title="Dismiss">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+
+          {% if form.priority.errors %}
+          <div class="form-error"
+            style="color:#dc2626; font-size:0.825rem; margin-top:0.4rem; display:flex; align-items:center; gap:0.35rem;">
+            <i class="fa-solid fa-circle-exclamation"></i> {{ form.priority.errors.0 }}
+          </div>
+          {% endif %}
+          <div class="form-help">Set the priority according to the importance and urgency of this item. You can change
+            your selection at any time.</div>
         </div>
 
         <!-- Campus Location -->
@@ -84,7 +221,10 @@
             </label>
             {{ form.location }}
             {% if form.location.errors %}
-              <div class="form-error">{{ form.location.errors.0 }}</div>
+            <div class="form-error"
+              style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.location.errors.0 }}
+            </div>
             {% endif %}
           </div>
 
@@ -94,7 +234,10 @@
             </label>
             {{ form.location_details }}
             {% if form.location_details.errors %}
-              <div class="form-error">{{ form.location_details.errors.0 }}</div>
+            <div class="form-error"
+              style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.location_details.errors.0 }}
+            </div>
             {% endif %}
           </div>
         </div>
@@ -106,10 +249,14 @@
           </label>
           {{ form.description }}
           {% if form.description.errors %}
-            <div class="form-error">{{ form.description.errors.0 }}</div>
+          <div class="form-error"
+            style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+            <i class="fa-solid fa-circle-exclamation"></i> {{ form.description.errors.0 }}
+          </div>
           {% endif %}
           <div class="form-help">
-            Mention distinctive features, brand, color, case details, stickers, or scratches. Avoid posting sensitive codes like full debit card numbers!
+            Mention distinctive features, brand, color, case details, stickers, or scratches. Avoid posting sensitive
+            codes like full debit card numbers!
           </div>
         </div>
 
@@ -120,24 +267,31 @@
           </label>
           {{ form.image }}
           {% if form.image.errors %}
-            <div class="form-error">{{ form.image.errors.0 }}</div>
+          <div class="form-error"
+            style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+            <i class="fa-solid fa-circle-exclamation"></i> {{ form.image.errors.0 }}
+          </div>
           {% endif %}
           <div class="form-help">Upload a clear photo (JPG, PNG, or WEBP, max 5MB).</div>
 
           <!-- Live JS Preview Container -->
-          <div id="imagePreviewContainer" style="display:none; margin-top:1rem; max-width:240px; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border-color);">
+          <div id="imagePreviewContainer"
+            style="display:none; margin-top:1rem; max-width:240px; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--border-color);">
             <img id="imagePreview" src="#" alt="Upload Preview" style="width:100%; height:auto;">
           </div>
         </div>
 
         <!-- Privacy & Contact Preferences Section -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:1.25rem; margin-top:2rem; margin-bottom:1.5rem;">
+        <div
+          style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:1.25rem; margin-top:2rem; margin-bottom:1.5rem;">
           <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
             <i class="fa-solid fa-shield-halved" style="color:var(--primary);"></i>
-            <h4 style="font-size:1rem; font-weight:700; color:var(--text-main); margin:0;">Contact & Privacy Preferences</h4>
+            <h4 style="font-size:1rem; font-weight:700; color:var(--text-main); margin:0;">Contact & Privacy Preferences
+            </h4>
           </div>
           <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
-            To safeguard student privacy, contact details are never shown to anonymous visitors. You can also route communication exclusively through the Campus Lost & Found Desk.
+            To safeguard student privacy, contact details are never shown to anonymous visitors. You can also route
+            communication exclusively through the Campus Lost & Found Desk.
           </p>
 
           <div class="form-group">
@@ -146,7 +300,10 @@
             </label>
             {{ form.contact_preference }}
             {% if form.contact_preference.errors %}
-              <div class="form-error">{{ form.contact_preference.errors.0 }}</div>
+            <div class="form-error"
+              style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.contact_preference.errors.0 }}
+            </div>
             {% endif %}
           </div>
 
@@ -155,7 +312,10 @@
               <label for="{{ form.contact_email.id_for_label }}" class="form-label">Contact Email</label>
               {{ form.contact_email }}
               {% if form.contact_email.errors %}
-                <div class="form-error">{{ form.contact_email.errors.0 }}</div>
+              <div class="form-error"
+                style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ form.contact_email.errors.0 }}
+              </div>
               {% endif %}
             </div>
 
@@ -163,7 +323,10 @@
               <label for="{{ form.contact_phone.id_for_label }}" class="form-label">Contact Phone</label>
               {{ form.contact_phone }}
               {% if form.contact_phone.errors %}
-                <div class="form-error">{{ form.contact_phone.errors.0 }}</div>
+              <div class="form-error"
+                style="color:#dc2626; font-size:0.825rem; margin-top:0.35rem; display:flex; align-items:center; gap:0.35rem;">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ form.contact_phone.errors.0 }}
+              </div>
               {% endif %}
             </div>
           </div>
@@ -182,5 +345,202 @@
     </div>
   </div>
 </div>
-{% endblock %}
 
+<script>
+  let dismissedSuggestion = false;
+  let currentSuggestedPriority = null;
+
+  function selectPriorityOption(priorityValue) {
+    const normValue = String(priorityValue || 'medium').toLowerCase().trim();
+    const selectEl = document.getElementById('itemPrioritySelect') || document.querySelector('select[name="priority"]');
+    if (selectEl) {
+      selectEl.value = normValue;
+    }
+    updatePriorityCardsUI(normValue);
+  }
+
+  function updatePriorityCardsUI(priorityValue) {
+    const normValue = String(priorityValue || 'medium').toLowerCase().trim();
+    const cards = document.querySelectorAll('.priority-option-card');
+    cards.forEach(card => {
+      if (card.getAttribute('data-priority').toLowerCase() === normValue) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
+  }
+
+  function getSelectedPriority() {
+    const selectEl = document.getElementById('itemPrioritySelect') || document.querySelector('select[name="priority"]');
+    return selectEl && selectEl.value ? selectEl.value.toLowerCase().trim() : 'medium';
+  }
+
+  function analyzeSmartSuggestion() {
+    if (dismissedSuggestion) return;
+
+    const titleInput = document.querySelector('input[name="title"]');
+    const catSelect = document.getElementById('itemCategorySelect') || document.querySelector('select[name="category"]');
+    const titleText = (titleInput ? titleInput.value : '').toLowerCase().trim();
+    const catText = (catSelect && catSelect.selectedIndex >= 0 ? catSelect.options[catSelect.selectedIndex].text : '').toLowerCase().trim();
+    const combined = titleText + ' ' + catText;
+
+    if (!titleText && (!catText || catText.includes('category'))) {
+      hideSuggestionBanner();
+      return;
+    }
+
+    let suggested = null;
+    let matchedKeyword = '';
+
+    // Critical (Life-safety/emergency medical only)
+    const criticalWords = ['insulin', 'inhaler', 'prescription', 'medicine', 'epipen', 'hearing aid', 'pacemaker', 'emergency key'];
+    for (const w of criticalWords) {
+      if (combined.includes(w)) {
+        suggested = 'critical';
+        matchedKeyword = w;
+        break;
+      }
+    }
+
+    // High (Valuable electronics, ID cards, wallets, documents)
+    if (!suggested) {
+      const highWords = [
+        'id card', 'student id', 'identity card', 'aadhaar', 'pan card', 'passport', 'license', 'driving license',
+        'important document', 'certificate', 'marksheet', 'degree', 'cheque',
+        'phone', 'mobile', 'smartphone', 'iphone', 'android', 'laptop', 'macbook', 'dell', 'thinkpad', 'ipad', 'tablet',
+        'wallet', 'purse', 'debit card', 'credit card', 'atm card', 'cash'
+      ];
+      for (const w of highWords) {
+        if (combined.includes(w)) {
+          suggested = 'high';
+          matchedKeyword = w;
+          break;
+        }
+      }
+    }
+
+    // Low (Stationery, bottles, routine utility items)
+    if (!suggested) {
+      const lowWords = [
+        'water bottle', 'bottle', 'sipper', 'flask', 'tumbler',
+        'stationery', 'pen', 'pencil', 'ruler', 'eraser', 'notebook', 'register', 'folder', 'file',
+        'lunch box', 'tiffin', 'cap', 'hat', 'keychain', 'comb', 'scarf'
+      ];
+      for (const w of lowWords) {
+        if (combined.includes(w)) {
+          suggested = 'low';
+          matchedKeyword = w;
+          break;
+        }
+      }
+    }
+
+    // Medium (Everyday valuables: books, bags, audio, apparel)
+    if (!suggested) {
+      const mediumWords = [
+        'book', 'textbook', 'novel', 'bag', 'backpack', 'handbag', 'luggage', 'duffle',
+        'headphone', 'headphones', 'earbuds', 'airpods', 'headset', 'watch', 'smartwatch',
+        'jacket', 'coat', 'hoodie', 'calculator', 'glasses', 'spectacles', 'sunglasses', 'charger', 'umbrella'
+      ];
+      for (const w of mediumWords) {
+        if (combined.includes(w)) {
+          suggested = 'medium';
+          matchedKeyword = w;
+          break;
+        }
+      }
+    }
+
+    const currentPriority = getSelectedPriority();
+    if (suggested && suggested !== currentPriority) {
+      showSuggestionBanner(suggested, matchedKeyword || (titleText ? titleText.slice(0, 25) : catText));
+    } else {
+      hideSuggestionBanner();
+    }
+  }
+
+  function showSuggestionBanner(priority, matchedWord) {
+    currentSuggestedPriority = priority;
+    const banner = document.getElementById('prioritySuggestionBanner');
+    const wordEl = document.getElementById('suggestionMatchedWord');
+    const badgeEl = document.getElementById('suggestionBadge');
+
+    if (!banner || !wordEl || !badgeEl) return;
+
+    wordEl.textContent = matchedWord;
+    const badges = {
+      critical: '<span class="badge badge-priority-critical">Critical</span>',
+      high: '<span class="badge badge-priority-high">High</span>',
+      medium: '<span class="badge badge-priority-medium">Medium</span>',
+      low: '<span class="badge badge-priority-low">Low</span>'
+    };
+    badgeEl.innerHTML = badges[priority] || priority;
+    banner.style.display = 'flex';
+  }
+
+  function hideSuggestionBanner() {
+    const banner = document.getElementById('prioritySuggestionBanner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  function applySuggestedPriority() {
+    if (currentSuggestedPriority) {
+      selectPriorityOption(currentSuggestedPriority);
+      hideSuggestionBanner();
+    }
+  }
+
+  function dismissSuggestion() {
+    dismissedSuggestion = true;
+    hideSuggestionBanner();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // Init priority cards with current form value (preserves entered value on error)
+    const initialPriority = getSelectedPriority() || 'medium';
+    selectPriorityOption(initialPriority);
+
+    // Safety ensure priority is filled before form submit
+    const reportForm = document.querySelector('form');
+    if (reportForm) {
+      reportForm.addEventListener('submit', function () {
+        const selectEl = document.getElementById('itemPrioritySelect') || document.querySelector('select[name="priority"]');
+        if (selectEl && (!selectEl.value || selectEl.value === '')) {
+          selectEl.value = 'medium';
+        }
+      });
+    }
+
+    // Bind title and category inputs for smart suggestions
+    const titleInput = document.querySelector('input[name="title"]');
+    if (titleInput) {
+      titleInput.addEventListener('input', analyzeSmartSuggestion);
+    }
+    const catSelect = document.getElementById('itemCategorySelect') || document.querySelector('select[name="category"]');
+    if (catSelect) {
+      catSelect.addEventListener('change', analyzeSmartSuggestion);
+    }
+
+    // Live image preview
+    const imgInput = document.querySelector('input[type="file"][name="image"]');
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const previewImg = document.getElementById('imagePreview');
+    if (imgInput && previewContainer && previewImg) {
+      imgInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            previewImg.src = e.target.result;
+            previewContainer.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        } else {
+          previewContainer.style.display = 'none';
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

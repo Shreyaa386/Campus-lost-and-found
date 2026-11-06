@@ -119,6 +119,60 @@
         </div>
       </div>
 
+      <!-- Priority Distribution Summary Widget -->
+      <div class="priority-summary-section card" style="padding: 1.25rem; margin-bottom: 2rem; border: 1px solid var(--border-color); background: var(--bg-card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div class="priority-summary-title">
+            <i class="fa-solid fa-flag" style="color: var(--primary);"></i>
+            <span>Campus Priority Breakdown</span>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">
+            Active urgency distribution across university reports
+          </span>
+        </div>
+        <div class="priority-summary-grid">
+          <!-- Critical -->
+          <a href="{% url 'items:lost_items' %}?priority=critical" class="priority-kpi-card priority-kpi-critical" title="View Critical reports">
+            <div class="priority-kpi-header">
+              <span class="priority-kpi-label"><i class="fa-solid fa-circle-exclamation"></i> Critical</span>
+              <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; color: #b91c1c;"></i>
+            </div>
+            <div class="priority-kpi-count">{{ priority_counts.critical|default:0 }}</div>
+            <div class="priority-kpi-desc">Life-safety, emergency meds & critical essentials</div>
+          </a>
+
+          <!-- High -->
+          <a href="{% url 'items:lost_items' %}?priority=high" class="priority-kpi-card priority-kpi-high" title="View High Priority reports">
+            <div class="priority-kpi-header">
+              <span class="priority-kpi-label"><i class="fa-solid fa-triangle-exclamation"></i> High</span>
+              <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; color: #c2410c;"></i>
+            </div>
+            <div class="priority-kpi-count">{{ priority_counts.high|default:0 }}</div>
+            <div class="priority-kpi-desc">Phones, laptops, IDs, wallets & urgent docs</div>
+          </a>
+
+          <!-- Medium -->
+          <a href="{% url 'items:lost_items' %}?priority=medium" class="priority-kpi-card priority-kpi-medium" title="View Medium Priority reports">
+            <div class="priority-kpi-header">
+              <span class="priority-kpi-label"><i class="fa-solid fa-clock"></i> Medium</span>
+              <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; color: #1d4ed8;"></i>
+            </div>
+            <div class="priority-kpi-count">{{ priority_counts.medium|default:0 }}</div>
+            <div class="priority-kpi-desc">Books, backpacks, headphones & everyday personal items</div>
+          </a>
+
+          <!-- Low -->
+          <a href="{% url 'items:lost_items' %}?priority=low" class="priority-kpi-card priority-kpi-low" title="View Low Priority reports">
+            <div class="priority-kpi-header">
+              <span class="priority-kpi-label"><i class="fa-solid fa-circle-check"></i> Low</span>
+              <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem; color: #15803d;"></i>
+            </div>
+            <div class="priority-kpi-count">{{ priority_counts.low|default:0 }}</div>
+            <div class="priority-kpi-desc">Stationery, water bottles, umbrellas & non-critical items</div>
+          </a>
+        </div>
+      </div>
+
       <!-- 5. ANALYTICS CHARTS ROW (Recovery Activity Line Chart + Report Status Doughnut Chart) -->
       <div class="analytics-charts-grid">
         <!-- Recovery Activity Line Chart (~65%) -->

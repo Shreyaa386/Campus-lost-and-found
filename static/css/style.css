@@ -519,6 +519,12 @@ img {
   font-size: 0.825rem;
   color: #dc2626;
   margin-top: 0.35rem;
+  font-weight: 500;
+}
+
+.form-input.is-invalid, .form-select.is-invalid, .form-textarea.is-invalid, .form-control.is-invalid {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2 !important;
 }
 
 .form-checkbox {
@@ -3366,6 +3372,259 @@ html, body {
 .anti-manipulation-box li {
   margin-bottom: 0.35rem;
   line-height: 1.4;
+}
+
+/* ==========================================================================
+   PRIORITY SYSTEM STYLES (CampusCare Priority Lost & Found)
+   ========================================================================== */
+
+/* Priority Badges */
+.badge-priority-critical {
+  background-color: #fef2f2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-priority-high {
+  background-color: #fff7ed !important;
+  color: #c2410c !important;
+  border: 1px solid #fed7aa !important;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-priority-medium {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-priority-low {
+  background-color: #f0fdf4 !important;
+  color: #15803d !important;
+  border: 1px solid #bbf7d0 !important;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Priority Option Cards (Interactive Selector in Forms) */
+.priority-options-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .priority-options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .priority-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.priority-option-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.priority-option-card:hover {
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.priority-option-card.selected.opt-critical {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.priority-option-card.selected.opt-high {
+  border-color: #f97316;
+  background: #fff7ed;
+}
+
+.priority-option-card.selected.opt-medium {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.priority-option-card.selected.opt-low {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.priority-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.priority-card-title {
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.priority-card-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+/* Smart Priority Suggestion Banner */
+.priority-smart-suggestion {
+  display: none;
+  background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  margin-top: 0.65rem;
+  font-size: 0.825rem;
+  color: #1e3a8a;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Dashboard Priority Summary Widget */
+.priority-summary-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.priority-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.priority-summary-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.priority-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .priority-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .priority-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.priority-kpi-card {
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.priority-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.priority-kpi-critical {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.priority-kpi-high {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.priority-kpi-medium {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.priority-kpi-low {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.priority-kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.priority-kpi-label {
+  font-size: 0.775rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.priority-kpi-critical .priority-kpi-label { color: #b91c1c; }
+.priority-kpi-high .priority-kpi-label { color: #c2410c; }
+.priority-kpi-medium .priority-kpi-label { color: #1d4ed8; }
+.priority-kpi-low .priority-kpi-label { color: #15803d; }
+
+.priority-kpi-count {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #0f172a;
+  margin: 0.25rem 0;
+}
+
+.priority-kpi-desc {
+  font-size: 0.725rem;
+  color: #64748b;
+  line-height: 1.3;
 }
 
 

@@ -1,13 +1,15 @@
 import csv
 import datetime
 import json
+import logging
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Case, Count, F, IntegerField, Q, Sum, Value, When
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from core.models import CampusLocation, Category, Institution
 from .forms import (
@@ -16,6 +18,7 @@ from .forms import (
     ClaimSubmissionForm,
     DismissMatchForm,
     HandoverInitiateForm,
+    ItemPriorityUpdateForm,
     ItemReportForm,
     ItemStatusUpdateForm,
     NotificationPreferenceForm,
@@ -44,8 +47,7 @@ from .services import (
     FraudDetector,
     MatchingService,
     NotificationService,
-    TagService,
-    QRService,
+    PriorityService,
     RewardService,
 )
 
@@ -60,6 +62,27 @@ def home_view(request):
     if not request.user.is_authenticated:
         return redirect('login')
     return redirect('dashboard')
+
+
+def _get_priority_case_expressions():
+    """Generates Django Case expressions for ordering querysets by Priority."""
+    priority_order_desc = Case(
+        When(priority=Item.PRIORITY_CRITICAL, then=Value(1)),
+        When(priority=Item.PRIORITY_HIGH, then=Value(2)),
+        When(priority=Item.PRIORITY_MEDIUM, then=Value(3)),
+        When(priority=Item.PRIORITY_LOW, then=Value(4)),
+        default=Value(5),
+        output_field=IntegerField(),
+    )
+    priority_order_asc = Case(
+        When(priority=Item.PRIORITY_LOW, then=Value(1)),
+        When(priority=Item.PRIORITY_MEDIUM, then=Value(2)),
+        When(priority=Item.PRIORITY_HIGH, then=Value(3)),
+        When(priority=Item.PRIORITY_CRITICAL, then=Value(4)),
+        default=Value(5),
+        output_field=IntegerField(),
+    )
+    return priority_order_desc, priority_order_asc
 
 
 @login_required
@@ -204,6 +227,14 @@ def dashboard_view(request):
         recipient=user
     ).order_by('-created_at')[:6]
 
+    # Dynamic priority counts across campus reports
+    priority_counts = {
+        'critical': campus_items.filter(priority=Item.PRIORITY_CRITICAL).count(),
+        'high': campus_items.filter(priority=Item.PRIORITY_HIGH).count(),
+        'medium': campus_items.filter(priority=Item.PRIORITY_MEDIUM).count(),
+        'low': campus_items.filter(priority=Item.PRIORITY_LOW).count(),
+    }
+
     # Recent items reported on campus
     recent_campus_items = campus_items.select_related(
         'category', 'location', 'user'
@@ -215,6 +246,7 @@ def dashboard_view(request):
         'current_tab': tab,
         'search_query': q,
         'stats': stats,
+        'priority_counts': priority_counts,
         'recovery_trend': recovery_trend,
         'status_breakdown': status_breakdown,
         'chart_labels': json.dumps([x['month'] for x in recovery_trend]),
@@ -262,6 +294,7 @@ def my_reports_view(request):
     q = request.GET.get('q', '').strip()
     report_type = request.GET.get('type', '').strip()
     status = request.GET.get('status', '').strip()
+    priority = request.GET.get('priority', '').strip()
     sort = request.GET.get('sort', '-created_at').strip()
 
     filtered_reports = user_reports
@@ -281,13 +314,23 @@ def my_reports_view(request):
     if status and status in dict(Item.STATUS_CHOICES):
         filtered_reports = filtered_reports.filter(status=status)
 
-    valid_sorts = {
-        '-created_at': '-created_at',
-        'created_at': 'created_at',
-        '-date_lost_or_found': '-date_lost_or_found',
-        'date_lost_or_found': 'date_lost_or_found',
-    }
-    filtered_reports = filtered_reports.order_by(valid_sorts.get(sort, '-created_at'))
+    if priority and priority in dict(Item.PRIORITY_CHOICES):
+        filtered_reports = filtered_reports.filter(priority=priority)
+
+    # Sorting
+    priority_order_desc, priority_order_asc = _get_priority_case_expressions()
+    if sort in ['priority_desc', 'highest_priority']:
+        filtered_reports = filtered_reports.order_by(priority_order_desc, '-created_at')
+    elif sort in ['priority_asc', 'lowest_priority']:
+        filtered_reports = filtered_reports.order_by(priority_order_asc, '-created_at')
+    elif sort == 'created_at':
+        filtered_reports = filtered_reports.order_by('created_at')
+    elif sort == '-date_lost_or_found':
+        filtered_reports = filtered_reports.order_by('-date_lost_or_found', '-created_at')
+    elif sort == 'date_lost_or_found':
+        filtered_reports = filtered_reports.order_by('date_lost_or_found', '-created_at')
+    else:
+        filtered_reports = filtered_reports.order_by('-created_at')
 
     paginator = Paginator(filtered_reports, 10)
     page_number = request.GET.get('page', 1)
@@ -300,8 +343,10 @@ def my_reports_view(request):
         'q': q,
         'selected_type': report_type,
         'selected_status': status,
+        'selected_priority': priority,
         'selected_sort': sort,
         'status_choices': Item.STATUS_CHOICES,
+        'priority_choices': Item.PRIORITY_CHOICES,
     })
 
 
@@ -510,6 +555,10 @@ def _filter_and_paginate_items(request, report_type):
     if location_id:
         queryset = queryset.filter(location_id=location_id)
 
+    priority = request.GET.get('priority', '').strip()
+    if priority and priority in dict(Item.PRIORITY_CHOICES):
+        queryset = queryset.filter(priority=priority)
+
     status = request.GET.get('status')
     if status:
         queryset = queryset.filter(status=status)
@@ -526,9 +575,15 @@ def _filter_and_paginate_items(request, report_type):
         queryset = queryset.filter(date_lost_or_found__lte=date_to)
 
     sort = request.GET.get('sort', '-created_at')
-    valid_sorts = ['-created_at', 'created_at', '-date_lost_or_found', 'date_lost_or_found', 'title']
-    if sort in valid_sorts:
+    priority_order_desc, priority_order_asc = _get_priority_case_expressions()
+    if sort in ['priority_desc', 'highest_priority']:
+        queryset = queryset.order_by(priority_order_desc, '-created_at')
+    elif sort in ['priority_asc', 'lowest_priority']:
+        queryset = queryset.order_by(priority_order_asc, '-created_at')
+    elif sort in ['-created_at', 'created_at', '-date_lost_or_found', 'date_lost_or_found', 'title']:
         queryset = queryset.order_by(sort)
+    else:
+        queryset = queryset.order_by('-created_at')
 
     paginator = Paginator(queryset, 12)
     page_number = request.GET.get('page', 1)
@@ -538,6 +593,7 @@ def _filter_and_paginate_items(request, report_type):
         'q': q,
         'category_id': category_id,
         'location_id': location_id,
+        'priority': priority,
         'status': status,
         'date_from': date_from,
         'date_to': date_to,
@@ -559,6 +615,7 @@ def lost_items_view(request):
         'locations': locations,
         'filters': filters,
         'status_choices': Item.STATUS_CHOICES,
+        'priority_choices': Item.PRIORITY_CHOICES,
     })
 
 
@@ -574,6 +631,7 @@ def found_items_view(request):
         'locations': locations,
         'filters': filters,
         'status_choices': Item.STATUS_CHOICES,
+        'priority_choices': Item.PRIORITY_CHOICES,
     })
 
 
@@ -581,8 +639,10 @@ def found_items_view(request):
 def report_item_view(request, report_type):
     """
     Create a new Lost or Found item report.
-    Validates file upload, date, category, and location.
+    Validates file upload, date, category, location, and priority.
     """
+    logger = logging.getLogger(__name__)
+
     if report_type not in [Item.REPORT_TYPE_LOST, Item.REPORT_TYPE_FOUND]:
         messages.error(request, "Invalid report type specified.")
         return redirect('home')
@@ -608,7 +668,18 @@ def report_item_view(request, report_type):
                     return redirect('home')
                 item.institution = first_inst
 
-            form.save(commit=True)
+            # Save item to PostgreSQL and commit m2m relationships
+            item.save()
+            form.save_m2m()
+
+            # Create initial status history entry
+            ItemStatusHistory.objects.create(
+                item=item,
+                changed_by=request.user,
+                old_status='',
+                new_status=item.status,
+                remarks=f"Initial report published with {item.get_priority_display()} priority."
+            )
 
             # Trigger initial match discovery in background
             try:
@@ -622,12 +693,30 @@ def report_item_view(request, report_type):
             type_label = "Lost" if report_type == Item.REPORT_TYPE_LOST else "Found"
             messages.success(
                 request,
-                f"Your {type_label} Item report has been posted successfully! "
-                "Smart matching has been initiated."
+                f"Your {type_label} Item report '{item.title}' has been successfully posted with {item.get_priority_display()} priority! Smart matching has been initiated."
             )
             return redirect('items:item_detail', pk=item.pk)
         else:
-            messages.error(request, "Please check the form for errors.")
+            # Print and log validation errors for development diagnosis
+            logger.warning(
+                f"[ReportItemView] Validation failed for user {request.user.username}: "
+                f"errors={dict(form.errors)}, non_field_errors={form.non_field_errors()}"
+            )
+            print(f"[ReportItemView Validation Error] User: {request.user.username} | Field Errors: {dict(form.errors)}")
+            if form.non_field_errors():
+                print(f"[ReportItemView Validation Error] Non-Field Errors: {form.non_field_errors()}")
+
+            # Show specific field-level guidance instead of a generic-only message
+            error_fields = [form.fields[f].label or f.replace('_', ' ').title() for f in form.errors if f in form.fields]
+            if error_fields:
+                messages.error(
+                    request,
+                    f"Please correct the highlighted fields: {', '.join(error_fields)}."
+                )
+            elif form.non_field_errors():
+                messages.error(request, form.non_field_errors()[0])
+            else:
+                messages.error(request, "Unable to save report. Please check the highlighted fields below.")
     else:
         form = ItemReportForm(user=request.user, report_type=report_type)
 
@@ -810,6 +899,10 @@ def item_detail_view(request, pk):
             current_status=item.status
         )
 
+    priority_form = None
+    if getattr(request.user, 'is_staff_member', False):
+        priority_form = ItemPriorityUpdateForm(current_priority=item.priority)
+
     # Chat eligibility flags
     has_claims = item.claims.exists()
     is_reporter = request.user.is_authenticated and (request.user == item.user)
@@ -822,6 +915,7 @@ def item_detail_view(request, pk):
         'can_view_contact': can_view_contact,
         'history_logs': history_logs,
         'status_form': status_form,
+        'priority_form': priority_form,
         'matches_count': matches_count,
         'claims_count': claims_count,
         'user_active_claim': user_active_claim,
@@ -938,6 +1032,43 @@ def item_update_status_view(request, pk):
 
 
 @login_required
+def item_update_priority_view(request, pk):
+    """
+    Allow authorized administrators or campus security staff to update report priority.
+    Regular students are denied access.
+    """
+    item = get_object_or_404(Item, pk=pk)
+    if not getattr(request.user, 'is_staff_member', False):
+        raise PermissionDenied("Only authorized campus staff or administrators can update report priority.")
+
+    if request.method == 'POST':
+        form = ItemPriorityUpdateForm(request.POST, current_priority=item.priority)
+        if form.is_valid():
+            new_priority = form.cleaned_data['priority']
+            remarks = form.cleaned_data.get('remarks', '').strip()
+            old_priority = item.priority
+
+            if new_priority != old_priority or remarks:
+                item.priority = new_priority
+                item.save(update_fields=['priority', 'updated_at'])
+                ItemStatusHistory.objects.create(
+                    item=item,
+                    changed_by=request.user,
+                    old_status=item.status,
+                    new_status=item.status,
+                    remarks=remarks or f"Priority updated from {old_priority.capitalize()} to {new_priority.capitalize()} by {request.user.display_name}."
+                )
+                messages.success(request, f"Item priority updated to '{item.get_priority_display()}'.")
+            else:
+                messages.info(request, "No priority change was made.")
+        else:
+            messages.error(request, "Invalid priority selected.")
+
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('items:item_detail', kwargs={'pk': item.pk})
+    return redirect(next_url)
+
+
+@login_required
 def admin_manage_reports_view(request):
     """Campus administrator and staff moderation dashboard."""
     if not getattr(request.user, 'is_staff_member', False):
@@ -945,6 +1076,8 @@ def admin_manage_reports_view(request):
 
     status_filter = request.GET.get('status', '')
     type_filter = request.GET.get('type', '')
+    priority_filter = request.GET.get('priority', '').strip()
+    sort = request.GET.get('sort', '-created_at').strip()
     q = request.GET.get('q', '').strip()
 
     items = Item.objects.all().select_related('category', 'location', 'user', 'institution')
@@ -953,6 +1086,8 @@ def admin_manage_reports_view(request):
         items = items.filter(status=status_filter)
     if type_filter:
         items = items.filter(report_type=type_filter)
+    if priority_filter and priority_filter in dict(Item.PRIORITY_CHOICES):
+        items = items.filter(priority=priority_filter)
     if q:
         items = items.filter(
             Q(title__icontains=q) |
@@ -960,6 +1095,17 @@ def admin_manage_reports_view(request):
             Q(user__username__icontains=q) |
             Q(user__student_id__icontains=q)
         )
+
+    # Priority & Date Sorting
+    priority_order_desc, priority_order_asc = _get_priority_case_expressions()
+    if sort in ['priority_desc', 'highest_priority']:
+        items = items.order_by(priority_order_desc, '-created_at')
+    elif sort in ['priority_asc', 'lowest_priority']:
+        items = items.order_by(priority_order_asc, '-created_at')
+    elif sort == 'created_at':
+        items = items.order_by('created_at')
+    else:
+        items = items.order_by('-created_at')
 
     paginator = Paginator(items, 15)
     page_number = request.GET.get('page', 1)
@@ -971,6 +1117,10 @@ def admin_manage_reports_view(request):
         'pending': Item.objects.filter(status=Item.STATUS_PENDING).count(),
         'returned': Item.objects.filter(status=Item.STATUS_RETURNED).count(),
         'expired': Item.objects.filter(status=Item.STATUS_EXPIRED).count(),
+        'critical': Item.objects.filter(priority=Item.PRIORITY_CRITICAL).count(),
+        'high': Item.objects.filter(priority=Item.PRIORITY_HIGH).count(),
+        'medium': Item.objects.filter(priority=Item.PRIORITY_MEDIUM).count(),
+        'low': Item.objects.filter(priority=Item.PRIORITY_LOW).count(),
         'total_claims': Claim.objects.count(),
         'pending_claims': Claim.objects.filter(status=Claim.STATUS_PENDING).count(),
     }
@@ -979,8 +1129,11 @@ def admin_manage_reports_view(request):
         'page_obj': page_obj,
         'stats': stats,
         'status_choices': Item.STATUS_CHOICES,
+        'priority_choices': Item.PRIORITY_CHOICES,
         'current_status': status_filter,
         'current_type': type_filter,
+        'current_priority': priority_filter,
+        'current_sort': sort,
         'q': q,
     })
 
@@ -1579,25 +1732,6 @@ def recovery_timeline_view(request, pk):
         'item': item,
         'timeline_events': timeline_events,
     })
-
-
-def item_tag_view(request, pk):
-    """
-    Printable item identification tag page.
-    Displays safe item reference code, category, campus location, and return instructions
-    without QR code matrices or private contact details.
-    """
-    item = get_object_or_404(
-        Item.objects.select_related('category', 'location', 'institution'),
-        pk=pk
-    )
-    tag_context = TagService.generate_tag_context(item, request=request)
-
-    return render(request, 'items/item_tag.html', tag_context)
-
-
-# Backward compatibility alias
-qr_tag_view = item_tag_view
 
 
 @login_required

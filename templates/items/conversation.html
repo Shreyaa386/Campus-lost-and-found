@@ -5,323 +5,323 @@
 
 {% block extra_css %}
 <style>
-/* Coordination Chat Dedicated Styles */
-.chat-page-wrapper {
-  max-width: 900px;
-  margin: 1rem auto 2.5rem auto;
-  padding: 0 1rem;
-}
+  /* Coordination Chat Dedicated Styles */
+  .chat-page-wrapper {
+    max-width: 900px;
+    margin: 1rem auto 2.5rem auto;
+    padding: 0 1rem;
+  }
 
-.chat-nav-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
+  .chat-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
 
-.chat-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #2563eb;
-  text-decoration: none;
-  transition: all 0.2s;
-}
+  .chat-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
 
-.chat-back-link:hover {
-  color: #1d4ed8;
-  transform: translateX(-2px);
-}
+  .chat-back-link:hover {
+    color: #1d4ed8;
+    transform: translateX(-2px);
+  }
 
-.chat-box-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-  display: flex;
-  flex-direction: column;
-  height: 650px;
-  max-height: calc(100vh - 220px);
-  min-height: 480px;
-  overflow: hidden;
-}
+  .chat-box-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    display: flex;
+    flex-direction: column;
+    height: 650px;
+    max-height: calc(100vh - 220px);
+    min-height: 480px;
+    overflow: hidden;
+  }
 
-/* Chat Header */
-.chat-card-header {
-  padding: 1rem 1.5rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
+  /* Chat Header */
+  .chat-card-header {
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
 
-.chat-partner-info {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
+  .chat-partner-info {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
 
-.chat-avatar-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #2563eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
+  .chat-avatar-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
 
-.chat-title-group h2 {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-}
+  .chat-title-group h2 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
 
-.chat-partner-role {
-  font-size: 0.8rem;
-  color: #64748b;
-  margin-top: 0.15rem;
-}
+  .chat-partner-role {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 0.15rem;
+  }
 
-.chat-partner-role strong {
-  color: #2563eb;
-}
+  .chat-partner-role strong {
+    color: #2563eb;
+  }
 
-.chat-actions-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
+  .chat-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
 
-/* Privacy Security Banner */
-.chat-privacy-banner {
-  background: #fefce8;
-  border-bottom: 1px solid #fef08a;
-  padding: 0.65rem 1.25rem;
-  font-size: 0.775rem;
-  color: #854d0e;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+  /* Privacy Security Banner */
+  .chat-privacy-banner {
+    background: #fefce8;
+    border-bottom: 1px solid #fef08a;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.775rem;
+    color: #854d0e;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
-.chat-privacy-banner i {
-  color: #ca8a04;
-  font-size: 0.95rem;
-}
+  .chat-privacy-banner i {
+    color: #ca8a04;
+    font-size: 0.95rem;
+  }
 
-/* Messages Stream */
-.chat-messages-stream {
-  flex: 1;
-  padding: 1.5rem;
-  overflow-y: auto;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
+  /* Messages Stream */
+  .chat-messages-stream {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
 
-.chat-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
-  color: #94a3b8;
-  padding: 2rem 1rem;
-}
+  .chat-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    color: #94a3b8;
+    padding: 2rem 1rem;
+  }
 
-.chat-empty-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.75rem;
-  color: #94a3b8;
-  margin-bottom: 1rem;
-}
+  .chat-empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+  }
 
-.chat-message-row {
-  display: flex;
-  flex-direction: column;
-  max-width: 78%;
-}
+  .chat-message-row {
+    display: flex;
+    flex-direction: column;
+    max-width: 78%;
+  }
 
-.chat-message-row.sent {
-  align-self: flex-end;
-  align-items: flex-end;
-}
+  .chat-message-row.sent {
+    align-self: flex-end;
+    align-items: flex-end;
+  }
 
-.chat-message-row.received {
-  align-self: flex-start;
-  align-items: flex-start;
-}
+  .chat-message-row.received {
+    align-self: flex-start;
+    align-items: flex-start;
+  }
 
-.chat-message-meta {
-  font-size: 0.725rem;
-  color: #94a3b8;
-  margin-bottom: 0.3rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+  .chat-message-meta {
+    font-size: 0.725rem;
+    color: #94a3b8;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
-.chat-message-bubble {
-  padding: 0.85rem 1.15rem;
-  font-size: 0.9rem;
-  line-height: 1.55;
-  border-radius: 16px;
-  position: relative;
-  word-break: break-word;
-}
+  .chat-message-bubble {
+    padding: 0.85rem 1.15rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    border-radius: 16px;
+    position: relative;
+    word-break: break-word;
+  }
 
-.chat-message-row.sent .chat-message-bubble {
-  background: #2563eb;
-  color: #ffffff;
-  border-bottom-right-radius: 4px;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
-}
+  .chat-message-row.sent .chat-message-bubble {
+    background: #2563eb;
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+  }
 
-.chat-message-row.received .chat-message-bubble {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-bottom-left-radius: 4px;
-  border: 1px solid #e2e8f0;
-}
+  .chat-message-row.received .chat-message-bubble {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-bottom-left-radius: 4px;
+    border: 1px solid #e2e8f0;
+  }
 
-.chat-message-row.flagged .chat-message-bubble {
-  border: 1px dashed #ef4444;
-  background: #fef2f2;
-  color: #991b1b;
-}
+  .chat-message-row.flagged .chat-message-bubble {
+    border: 1px dashed #ef4444;
+    background: #fef2f2;
+    color: #991b1b;
+  }
 
-.chat-bubble-flag-btn {
-  font-size: 0.725rem;
-  color: #ef4444;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  margin-top: 0.25rem;
-  opacity: 0.75;
-  transition: opacity 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
+  .chat-bubble-flag-btn {
+    font-size: 0.725rem;
+    color: #ef4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    margin-top: 0.25rem;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
 
-.chat-bubble-flag-btn:hover {
-  opacity: 1;
-  text-decoration: underline;
-}
+  .chat-bubble-flag-btn:hover {
+    opacity: 1;
+    text-decoration: underline;
+  }
 
-/* Chat Input Footer Form */
-.chat-footer-form {
-  padding: 1rem 1.25rem;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-}
+  /* Chat Input Footer Form */
+  .chat-footer-form {
+    padding: 1rem 1.25rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+  }
 
-.chat-input-wrapper {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-end;
-}
+  .chat-input-wrapper {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
 
-.chat-textarea {
-  flex: 1;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  font-size: 0.9rem;
-  font-family: inherit;
-  color: #0f172a;
-  line-height: 1.5;
-  resize: none;
-  height: 56px;
-  min-height: 56px;
-  max-height: 120px;
-  transition: all 0.2s;
-  outline: none;
-}
+  .chat-textarea {
+    flex: 1;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: #0f172a;
+    line-height: 1.5;
+    resize: none;
+    height: 56px;
+    min-height: 56px;
+    max-height: 120px;
+    transition: all 0.2s;
+    outline: none;
+  }
 
-.chat-textarea:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
+  .chat-textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
 
-.chat-send-btn {
-  height: 56px;
-  padding: 0 1.5rem;
-  background: #2563eb;
-  color: #ffffff;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
+  .chat-send-btn {
+    height: 56px;
+    padding: 0 1.5rem;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
 
-.chat-send-btn:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-}
+  .chat-send-btn:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
 
-.chat-send-btn:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-  transform: none;
-}
+  .chat-send-btn:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+  }
 
-/* Report Abuse Modal */
-.chat-modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(3px);
-  z-index: 2000;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
+  /* Report Abuse Modal */
+  .chat-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(3px);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
 
-.chat-modal-overlay.show {
-  display: flex;
-}
+  .chat-modal-overlay.show {
+    display: flex;
+  }
 
-.chat-modal-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 1.75rem;
-  max-width: 480px;
-  width: 100%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
-}
+  .chat-modal-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.75rem;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+  }
 </style>
 {% endblock %}
 
@@ -339,9 +339,6 @@
       <a href="{% url 'items:recovery_timeline' item.pk %}" class="btn btn-secondary btn-sm">
         <i class="fa-solid fa-timeline"></i> Timeline
       </a>
-      <a href="{% url 'items:item_tag' item.pk %}" class="btn btn-secondary btn-sm">
-        <i class="fa-solid fa-tag"></i> Item Tag
-      </a>
     </div>
   </div>
 
@@ -356,18 +353,19 @@
         <div class="chat-title-group">
           <h2>{{ item.title }}</h2>
           <div class="chat-partner-role">
-            Coordinating with: 
+            Coordinating with:
             <strong>
               {% if counterpart == item.user %}
-                Item Custodian / Finder
+              Item Custodian / Finder
               {% elif user.is_staff_member %}
-                Student Claimant ({{ counterpart.display_name }})
+              Student Claimant ({{ counterpart.display_name }})
               {% else %}
-                Campus Care Representative
+              Campus Care Representative
               {% endif %}
             </strong>
             <span style="color:#94a3b8; margin: 0 4px;">•</span>
-            <span style="font-family: monospace; font-size: 0.775rem;">Ref: {{ item.item_code|default:"CC-ITEM" }}</span>
+            <span style="font-family: monospace; font-size: 0.775rem;">Ref: {{ item.item_code|default:"CC-ITEM"
+              }}</span>
           </div>
         </div>
       </div>
@@ -376,58 +374,61 @@
     <!-- Security & Privacy Guard Banner -->
     <div class="chat-privacy-banner">
       <i class="fa-solid fa-shield-halved"></i>
-      <span><strong>Privacy Guard Active:</strong> Personal mobile numbers, emails, and student IDs are securely shielded. Arrange meeting points exclusively at official campus locations (e.g. Block 34 Security Desk).</span>
+      <span><strong>Privacy Guard Active:</strong> Personal mobile numbers, emails, and student IDs are securely
+        shielded. Arrange meeting points exclusively at official campus locations (e.g. Block 34 Security Desk).</span>
     </div>
 
     <!-- Scrollable Messages Stream -->
     <div class="chat-messages-stream" id="chatMessagesStream">
       {% if messages_list %}
-        {% for msg in messages_list %}
-          <div class="chat-message-row {% if msg.sender == user %}sent{% else %}received{% endif %} {% if msg.is_flagged_for_abuse %}flagged{% endif %}">
-            <div class="chat-message-meta">
-              <span style="font-weight: 700;">
-                {% if msg.sender == user %}
-                  You
-                {% elif msg.sender == item.user %}
-                  Item Finder / Custodian
-                {% elif msg.sender.is_staff_member %}
-                  Campus Security Desk
-                {% else %}
-                  Claimant
-                {% endif %}
-              </span>
-              <span>•</span>
-              <span>{{ msg.created_at|date:"M d, h:i A" }}</span>
-            </div>
-
-            <div class="chat-message-bubble">
-              {{ msg.message_text|linebreaksbr }}
-
-              {% if msg.is_flagged_for_abuse %}
-                <div style="font-size: 0.725rem; color: #ef4444; font-weight: 700; margin-top: 0.35rem;">
-                  <i class="fa-solid fa-flag"></i> Message flagged for security moderation
-                </div>
-              {% endif %}
-            </div>
-
-            {% if msg.sender != user and not msg.is_flagged_for_abuse %}
-              <button type="button" class="chat-bubble-flag-btn" onclick="openAbuseModal('{{ msg.pk }}')">
-                <i class="fa-solid fa-flag"></i> Report Abuse
-              </button>
+      {% for msg in messages_list %}
+      <div
+        class="chat-message-row {% if msg.sender == user %}sent{% else %}received{% endif %} {% if msg.is_flagged_for_abuse %}flagged{% endif %}">
+        <div class="chat-message-meta">
+          <span style="font-weight: 700;">
+            {% if msg.sender == user %}
+            You
+            {% elif msg.sender == item.user %}
+            Item Finder / Custodian
+            {% elif msg.sender.is_staff_member %}
+            Campus Security Desk
+            {% else %}
+            Claimant
             {% endif %}
-          </div>
-        {% endfor %}
-      {% else %}
-        <!-- Empty State -->
-        <div class="chat-empty-state">
-          <div class="chat-empty-icon">
-            <i class="fa-regular fa-comments"></i>
-          </div>
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Start Confidential Coordination</h3>
-          <p style="font-size: 0.85rem; max-width: 420px; line-height: 1.5; margin: 0;">
-            No messages sent yet. Coordinate safe pickup timing or confirm physical item characteristics below.
-          </p>
+          </span>
+          <span>•</span>
+          <span>{{ msg.created_at|date:"M d, h:i A" }}</span>
         </div>
+
+        <div class="chat-message-bubble">
+          {{ msg.message_text|linebreaksbr }}
+
+          {% if msg.is_flagged_for_abuse %}
+          <div style="font-size: 0.725rem; color: #ef4444; font-weight: 700; margin-top: 0.35rem;">
+            <i class="fa-solid fa-flag"></i> Message flagged for security moderation
+          </div>
+          {% endif %}
+        </div>
+
+        {% if msg.sender != user and not msg.is_flagged_for_abuse %}
+        <button type="button" class="chat-bubble-flag-btn" onclick="openAbuseModal('{{ msg.pk }}')">
+          <i class="fa-solid fa-flag"></i> Report Abuse
+        </button>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% else %}
+      <!-- Empty State -->
+      <div class="chat-empty-state">
+        <div class="chat-empty-icon">
+          <i class="fa-regular fa-comments"></i>
+        </div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Start Confidential
+          Coordination</h3>
+        <p style="font-size: 0.85rem; max-width: 420px; line-height: 1.5; margin: 0;">
+          No messages sent yet. Coordinate safe pickup timing or confirm physical item characteristics below.
+        </p>
+      </div>
       {% endif %}
     </div>
 
@@ -436,22 +437,16 @@
       <form method="post" action="{% url 'items:conversation_detail' conversation.pk %}" id="chatMessageForm">
         {% csrf_token %}
         <div class="chat-input-wrapper">
-          <textarea 
-            name="message_text" 
-            id="chatMessageInput" 
-            class="chat-textarea" 
-            rows="2" 
-            placeholder="Type your message to coordinate pickup... (contact details remain hidden)" 
-            required
-          ></textarea>
+          <textarea name="message_text" id="chatMessageInput" class="chat-textarea" rows="2"
+            placeholder="Type your message to coordinate pickup... (contact details remain hidden)" required></textarea>
           <button type="submit" class="chat-send-btn" id="chatSendBtn">
             <i class="fa-solid fa-paper-plane"></i> Send
           </button>
         </div>
         {% if form.message_text.errors %}
-          <p style="color: #ef4444; font-size: 0.8rem; margin-top: 0.4rem;">
-            {{ form.message_text.errors.0 }}
-          </p>
+        <p style="color: #ef4444; font-size: 0.8rem; margin-top: 0.4rem;">
+          {{ form.message_text.errors.0 }}
+        </p>
         {% endif %}
       </form>
     </div>
@@ -465,23 +460,20 @@
       <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">
         <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> Report Message
       </h3>
-      <button type="button" onclick="closeAbuseModal()" style="background: none; border: none; font-size: 1.25rem; color: #94a3b8; cursor: pointer;">&times;</button>
+      <button type="button" onclick="closeAbuseModal()"
+        style="background: none; border: none; font-size: 1.25rem; color: #94a3b8; cursor: pointer;">&times;</button>
     </div>
     <p style="font-size: 0.825rem; color: #64748b; line-height: 1.5; margin-bottom: 1.25rem;">
-      CampusCare strictly enforces university safety policies. Please specify the issue (e.g. harassment, scam, extortion, asking for bank credentials):
+      CampusCare strictly enforces university safety policies. Please specify the issue (e.g. harassment, scam,
+      extortion, asking for bank credentials):
     </p>
 
     <form id="abuseReportForm" method="post" action="">
       {% csrf_token %}
       <div style="margin-bottom: 1.25rem;">
-        <input 
-          type="text" 
-          name="abuse_reason" 
-          class="form-input" 
-          placeholder="e.g. Asking for money, harassment, or inappropriate conduct" 
-          required 
-          style="width: 100%; border-radius: 10px;"
-        />
+        <input type="text" name="abuse_reason" class="form-input"
+          placeholder="e.g. Asking for money, harassment, or inappropriate conduct" required
+          style="width: 100%; border-radius: 10px;" />
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
         <button type="button" onclick="closeAbuseModal()" class="btn btn-secondary btn-sm">Cancel</button>
@@ -493,56 +485,56 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  // Auto scroll to bottom of messages stream
-  const stream = document.getElementById('chatMessagesStream');
-  if (stream) {
-    stream.scrollTop = stream.scrollHeight;
-  }
+  document.addEventListener('DOMContentLoaded', function () {
+    // Auto scroll to bottom of messages stream
+    const stream = document.getElementById('chatMessagesStream');
+    if (stream) {
+      stream.scrollTop = stream.scrollHeight;
+    }
 
-  // Handle enter key to send (Shift+Enter for newline)
-  const input = document.getElementById('chatMessageInput');
-  const form = document.getElementById('chatMessageForm');
-  const sendBtn = document.getElementById('chatSendBtn');
+    // Handle enter key to send (Shift+Enter for newline)
+    const input = document.getElementById('chatMessageInput');
+    const form = document.getElementById('chatMessageForm');
+    const sendBtn = document.getElementById('chatSendBtn');
 
-  if (input && form) {
-    input.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (input.value.trim().length > 0) {
-          if (sendBtn) {
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+    if (input && form) {
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (input.value.trim().length > 0) {
+            if (sendBtn) {
+              sendBtn.disabled = true;
+              sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+            }
+            form.submit();
           }
-          form.submit();
         }
-      }
-    });
+      });
 
-    form.addEventListener('submit', function () {
-      if (sendBtn) {
-        sendBtn.disabled = true;
-        sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
-      }
-    });
-  }
-});
+      form.addEventListener('submit', function () {
+        if (sendBtn) {
+          sendBtn.disabled = true;
+          sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+        }
+      });
+    }
+  });
 
-function openAbuseModal(messageId) {
-  const modal = document.getElementById('abuseReportModal');
-  const form = document.getElementById('abuseReportForm');
-  if (modal && form) {
-    form.action = '/items/messages/' + messageId + '/report-abuse/';
-    modal.classList.add('show');
+  function openAbuseModal(messageId) {
+    const modal = document.getElementById('abuseReportModal');
+    const form = document.getElementById('abuseReportForm');
+    if (modal && form) {
+      form.action = '/items/messages/' + messageId + '/report-abuse/';
+      modal.classList.add('show');
+    }
   }
-}
 
-function closeAbuseModal() {
-  const modal = document.getElementById('abuseReportModal');
-  if (modal) {
-    modal.classList.remove('show');
+  function closeAbuseModal() {
+    const modal = document.getElementById('abuseReportModal');
+    if (modal) {
+      modal.classList.remove('show');
+    }
   }
-}
 </script>
 {% endblock %}
 {% endblock %}

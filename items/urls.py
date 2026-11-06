@@ -16,6 +16,7 @@ urlpatterns = [
     path('<int:pk>/edit/', views.item_edit_view, name='item_edit'),
     path('<int:pk>/delete/', views.item_delete_view, name='item_delete'),
     path('<int:pk>/status/', views.item_update_status_view, name='item_update_status'),
+    path('<int:pk>/priority/', views.item_update_priority_view, name='item_update_priority'),
 
     # Smart Matching
     path('<int:pk>/matches/', views.item_matches_view, name='item_matches'),
@@ -42,8 +43,6 @@ urlpatterns = [
     path('receipts/<int:pk>/', views.recovery_receipt_view, name='recovery_receipt'),
     path('recovery-history/', views.recovery_history_view, name='recovery_history'),
     path('<int:pk>/timeline/', views.recovery_timeline_view, name='recovery_timeline'),
-    path('<int:pk>/tag/', views.item_tag_view, name='item_tag'),
-    path('<int:pk>/qr/', views.qr_tag_view, name='qr_tag'),
 
     # Anonymous Communication
     path('<int:pk>/chat/', views.item_conversation_view, name='item_conversation'),
