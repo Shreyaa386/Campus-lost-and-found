@@ -279,3 +279,24 @@ class NotificationService:
             notification_type=Notification.TYPE_REWARD_EARNED,
             link=reverse('items:leaderboard')
         )
+
+    @classmethod
+    def notify_milestone_unlocked(cls, user, milestone, returns_count: int, item=None):
+        """Notifies user of academic Duty Leave (DL) milestone achievement."""
+        from items.models import Notification
+
+        if not cls._is_preference_enabled(user, 'notify_on_rewards'):
+            return
+
+        msg = (
+            f"Congratulations! You reached {returns_count} successfully returned item(s) on campus. "
+            f"You have been officially awarded {milestone.title} ({milestone.description})."
+        )
+
+        Notification.objects.create(
+            recipient=user,
+            title=f"Milestone Unlocked: {milestone.title}!",
+            message=msg,
+            notification_type=Notification.TYPE_REWARD_EARNED,
+            link=reverse('items:rewards')
+        )

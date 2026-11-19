@@ -144,14 +144,16 @@ class ItemReportForm(forms.ModelForm):
             self.fields['location'].queryset = CampusLocation.objects.filter(
                 institution=self.user.institution,
                 is_active=True
-            )
+            ).order_by('sort_order', 'name')
             self.fields['category'].queryset = Category.objects.filter(
                 Q(institution=self.user.institution) | Q(institution__isnull=True),
                 is_active=True
             )
         else:
             self.fields['category'].queryset = Category.objects.filter(is_active=True)
-            self.fields['location'].queryset = CampusLocation.objects.filter(is_active=True)
+            self.fields['location'].queryset = CampusLocation.objects.filter(
+                is_active=True
+            ).order_by('sort_order', 'name')
 
         self.fields['category'].empty_label = "Select an item category"
         self.fields['location'].empty_label = "Select campus location (Optional)"

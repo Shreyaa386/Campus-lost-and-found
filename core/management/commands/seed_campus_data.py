@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from core.models import Institution, Department, CampusLocation, Category
-from items.models import ExpirationRule, RewardRule, Badge
+from items.models import ExpirationRule, RewardRule, Badge, MilestoneReward
 
 
 class Command(BaseCommand):
@@ -54,32 +54,49 @@ class Command(BaseCommand):
             if dept_created:
                 self.stdout.write(f"  + Department: {name} ({code})")
 
-        # 3. Campus Locations (with GPS coordinates for campus heatmap)
-        locations_data = [
-            ('Central Library - Ground Floor Reading Room', 'Library Building', 'Ground Floor', 12.9719, 77.5942),
-            ('Central Library - 2nd Floor Digital Lab', 'Library Building', '2nd Floor', 12.9720, 77.5943),
-            ('Main Student Cafeteria', 'Student Activity Center', 'Ground Floor', 12.9712, 77.5950),
-            ('Academic Block A - CSE Lab 3', 'Academic Block A', '3rd Floor', 12.9725, 77.5938),
-            ('Academic Block B - Lecture Hall 101', 'Academic Block B', '1st Floor', 12.9728, 77.5945),
-            ('Sports Complex & Gymnasium', 'Sports Complex', 'Ground Floor', 12.9705, 77.5955),
-            ('Campus Auditorium', 'Admin Complex', 'Ground Floor', 12.9715, 77.5935),
-            ('Main Campus Gate & Security Desk', 'Main Gate', 'Ground Floor', 12.9700, 77.5940),
-            ('Student Parking Lot B', 'Parking Zone', 'Open Ground', 12.9702, 77.5948),
+        # 3. Exactly 62 Campus Locations (Block 1 - Block 56, Central Library, SDMA, DSW, UniMall, Main Gate, Food Court)
+        raw_locations_62 = [
+            f"Block {i}" for i in range(1, 57)
+        ] + [
+            "Central Library",
+            "SDMA",
+            "DSW",
+            "UniMall",
+            "Main Gate",
+            "Food Court",
         ]
-        for name, building, floor, lat, lng in locations_data:
+
+        active_location_names = set(raw_locations_62)
+
+        # Handle existing locations gracefully without breaking reports
+        for existing_loc in CampusLocation.objects.filter(institution=institution):
+            if existing_loc.name == "Main Campus Gate & Security Desk":
+                existing_loc.name = "Main Gate"
+                existing_loc.building = ""
+                existing_loc.sort_order = 61
+                existing_loc.is_active = True
+                existing_loc.save()
+            elif existing_loc.name not in active_location_names:
+                existing_loc.is_active = False
+                existing_loc.save(update_fields=['is_active'])
+
+        for order, loc_name in enumerate(raw_locations_62, start=1):
             loc, loc_created = CampusLocation.objects.get_or_create(
                 institution=institution,
-                name=name,
-                defaults={'building': building, 'floor': floor, 'latitude': lat, 'longitude': lng, 'is_active': True}
+                name=loc_name,
+                defaults={
+                    'building': '',
+                    'floor': '',
+                    'sort_order': order,
+                    'is_active': True,
+                }
             )
             if not loc_created:
-                # Update lat/lng if not set
-                if loc.latitude is None or loc.longitude is None:
-                    loc.latitude = lat
-                    loc.longitude = lng
-                    loc.save(update_fields=['latitude', 'longitude'])
+                loc.sort_order = order
+                loc.is_active = True
+                loc.save(update_fields=['sort_order', 'is_active'])
             if loc_created:
-                self.stdout.write(f"  + Location: {name}")
+                self.stdout.write(f"  + Location: {loc_name} (#{order})")
 
         # 4. Item Categories
         categories_data = [
@@ -130,14 +147,15 @@ class Command(BaseCommand):
             if rr_created:
                 self.stdout.write(f"  + Reward Rule: {action_type} ({points} pts)")
 
-        # 7. Milestone Badges
+        # 7. Milestone Badges & Academic Duty Leave (DL) Rewards
         badges_data = [
-            ('Good Samaritan', 'first-return', 'Safely returned your first found item on campus.', 'fa-handshake', 0, 1),
-            ('Campus Guardian', 'campus-guardian', 'Helped return 5 lost items on campus.', 'fa-shield-halved', 0, 5),
-            ('Century Club', 'century-club', 'Accumulated over 100 CampusCare recovery points.', 'fa-trophy', 100, 0),
-            ('Master Finder', 'master-finder', 'Elite campus recovery contributor with 10+ returns.', 'fa-crown', 250, 10),
+            ('Good Samaritan', 'first-return', 'Safely returned your first found item on campus.', 'fa-handshake', 0, 1, '2 DL'),
+            ('Campus Guardian', 'campus-guardian', 'Helped return 5 lost items on campus.', 'fa-shield-halved', 0, 5, '4 DL'),
+            ('Campus Legend', 'campus-legend', 'Returned more than 5 items (6+ returns) on campus.', 'fa-crown', 0, 6, '1 Week DL'),
+            ('Century Club', 'century-club', 'Accumulated over 100 CampusCare recovery points.', 'fa-trophy', 100, 0, ''),
+            ('Master Finder', 'master-finder', 'Elite campus recovery contributor with 10+ returns.', 'fa-medal', 250, 10, ''),
         ]
-        for name, slug, desc, icon, pts_th, ret_th in badges_data:
+        for name, slug, desc, icon, pts_th, ret_th, reward in badges_data:
             bdg, bdg_created = Badge.objects.get_or_create(
                 slug=slug,
                 defaults={
@@ -146,10 +164,22 @@ class Command(BaseCommand):
                     'icon': icon,
                     'points_threshold': pts_th,
                     'returns_threshold': ret_th,
+                    'reward': reward,
                 }
             )
+            if not bdg_created:
+                bdg.name = name
+                bdg.description = desc
+                bdg.returns_threshold = ret_th
+                bdg.reward = reward
+                bdg.save()
             if bdg_created:
                 self.stdout.write(f"  + Badge: {name}")
+
+        # 7b. Academic Duty Leave (DL) Milestone Rewards
+        from items.services.reward_service import RewardService
+        RewardService.ensure_default_milestones()
+        self.stdout.write(self.style.SUCCESS("  + Seeded 3 DL Milestones: 1 Item (2 DL), 5 Items (4 DL), 6+ Items (1 Week DL)"))
 
         # 8. Subscription Plans & Institutional Subscription
         from core.models import SubscriptionPlan, InstitutionSubscription

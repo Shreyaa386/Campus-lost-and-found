@@ -110,7 +110,7 @@ class Department(models.Model):
 
 class CampusLocation(models.Model):
     """
-    Specific campus physical location (e.g., Library, Cafeteria, Sports Complex).
+    Specific campus physical location (e.g., Block 1, Central Library, UniMall).
     """
     institution = models.ForeignKey(
         Institution,
@@ -118,7 +118,7 @@ class CampusLocation(models.Model):
         related_name='locations'
     )
     name = models.CharField(max_length=150)
-    building = models.CharField(max_length=100)
+    building = models.CharField(max_length=100, blank=True, default='')
     floor = models.CharField(max_length=50, blank=True)
     description = models.TextField(blank=True)
     latitude = models.FloatField(
@@ -131,13 +131,19 @@ class CampusLocation(models.Model):
         blank=True,
         help_text="Approved campus GPS longitude for heatmap visualization"
     )
+    sort_order = models.PositiveIntegerField(
+        default=0,
+        help_text="Natural sequence order for campus location dropdowns"
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['building', 'name']
+        ordering = ['sort_order', 'name']
 
     def __str__(self):
+        if not self.building or self.building == self.name:
+            return self.name
         parts = [self.name]
         if self.building:
             parts.append(f"[{self.building}]")

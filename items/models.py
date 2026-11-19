@@ -916,12 +916,14 @@ class RewardTransaction(models.Model):
     TYPE_HANDOVER_CONFIRMED = 'handover_confirmed'
     TYPE_REPORT_SUBMITTED = 'report_submitted'
     TYPE_ADMIN_ADJUSTMENT = 'admin_adjustment'
+    TYPE_MILESTONE_REWARD = 'milestone_reward'
 
     TYPE_CHOICES = [
         (TYPE_ITEM_RETURNED, 'Found Item Returned to Owner'),
         (TYPE_HANDOVER_CONFIRMED, 'Handover Verified via OTP'),
         (TYPE_REPORT_SUBMITTED, 'Helpful Lost/Found Report Logged'),
         (TYPE_ADMIN_ADJUSTMENT, 'Administrative Adjustment'),
+        (TYPE_MILESTONE_REWARD, 'Duty Leave (DL) Milestone Reward'),
     ]
 
     user = models.ForeignKey(
@@ -943,7 +945,7 @@ class RewardTransaction(models.Model):
         blank=True,
         related_name='reward_transactions'
     )
-    points = models.IntegerField()
+    points = models.IntegerField(default=0)
     transaction_type = models.CharField(
         max_length=30,
         choices=TYPE_CHOICES
@@ -967,6 +969,12 @@ class Badge(models.Model):
     icon = models.CharField(max_length=50, default='fa-medal')
     points_threshold = models.PositiveIntegerField(default=0)
     returns_threshold = models.PositiveIntegerField(default=0)
+    reward = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        help_text="Milestone reward, e.g., '2 DL', '4 DL', '1 Week DL'"
+    )
 
     class Meta:
         ordering = ['points_threshold']
@@ -995,6 +1003,72 @@ class UserBadge(models.Model):
 
     def __str__(self):
         return f"{self.user.username} earned '{self.badge.name}'"
+
+
+class MilestoneReward(models.Model):
+    """
+    Official academic Duty Leave (DL) rewards awarded for milestones
+    of successfully returned items:
+    - 1 returned item -> 2 DL
+    - 5 returned items -> 4 DL
+    - More than 5 items (6+) -> 1 Week DL
+    """
+    slug = models.SlugField(max_length=100, unique=True)
+    title = models.CharField(max_length=100, help_text="e.g. '2 DL', '4 DL', '1 Week DL'")
+    returns_required = models.PositiveIntegerField(
+        unique=True,
+        help_text="Number of successfully returned items required"
+    )
+    description = models.CharField(max_length=255)
+    badge_name = models.CharField(max_length=100, blank=True)
+    icon = models.CharField(max_length=50, default='fa-award')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['returns_required']
+
+    def __str__(self):
+        return f"{self.returns_required} Return(s) → {self.title}"
+
+
+class UserMilestoneReward(models.Model):
+    """
+    Ledger of awarded milestone rewards.
+    Guarantees each milestone is awarded only once per user.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='earned_milestones'
+    )
+    milestone = models.ForeignKey(
+        MilestoneReward,
+        on_delete=models.CASCADE,
+        related_name='recipients'
+    )
+    handover = models.ForeignKey(
+        'Handover',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='milestone_awards'
+    )
+    item = models.ForeignKey(
+        'Item',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='milestone_awards'
+    )
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-awarded_at']
+        unique_together = ('user', 'milestone')
+
+    def __str__(self):
+        return f"{self.user.username} earned '{self.milestone.title}'"
 
 
 class RewardRule(models.Model):

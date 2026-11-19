@@ -240,12 +240,16 @@ def dashboard_view(request):
         'category', 'location', 'user'
     ).order_by('-created_at')[:8]
 
+    # Academic Duty Leave (DL) reward progress
+    reward_progress = RewardService.get_user_milestone_progress(user)
+
     return render(request, 'items/dashboard.html', {
         'is_dashboard': True,
         'page_obj': page_obj,
         'current_tab': tab,
         'search_query': q,
         'stats': stats,
+        'reward_progress': reward_progress,
         'priority_counts': priority_counts,
         'recovery_trend': recovery_trend,
         'status_breakdown': status_breakdown,
@@ -607,7 +611,7 @@ def lost_items_view(request):
     """List of reported lost items with search, filters, and pagination."""
     page_obj, filters = _filter_and_paginate_items(request, Item.REPORT_TYPE_LOST)
     categories = Category.objects.filter(is_active=True)
-    locations = CampusLocation.objects.filter(is_active=True)
+    locations = CampusLocation.objects.filter(is_active=True).order_by('sort_order', 'name')
 
     return render(request, 'items/lost_items.html', {
         'page_obj': page_obj,
@@ -623,7 +627,7 @@ def found_items_view(request):
     """List of reported found items with search, filters, and pagination."""
     page_obj, filters = _filter_and_paginate_items(request, Item.REPORT_TYPE_FOUND)
     categories = Category.objects.filter(is_active=True)
-    locations = CampusLocation.objects.filter(is_active=True)
+    locations = CampusLocation.objects.filter(is_active=True).order_by('sort_order', 'name')
 
     return render(request, 'items/found_items.html', {
         'page_obj': page_obj,
@@ -1015,6 +1019,7 @@ def item_update_status_view(request, pk):
                     if item.report_type == Item.REPORT_TYPE_FOUND and item.user:
                         item.user.reward_points += 50
                         item.user.save(update_fields=['reward_points'])
+                        RewardService.evaluate_milestone_rewards(item.user, item=item)
                         messages.success(request, f"50 Reward Points awarded to {item.user.display_name} for helping resolve this item!")
 
                 ItemStatusHistory.objects.create(
@@ -1852,9 +1857,11 @@ def message_report_abuse_view(request, pk):
 def leaderboard_view(request):
     """
     Campus Recovery Citizenship Leaderboard.
-    Displays privacy-conscious student rankings, points, and achievement badges.
+    Displays privacy-conscious student rankings, points, Duty Leave (DL) rewards, and achievement badges.
     """
+    from items.models import MilestoneReward
     RewardService.ensure_default_badges()
+    RewardService.ensure_default_milestones()
 
     institution = None
     if request.user.is_authenticated and hasattr(request.user, 'institution') and request.user.institution:
@@ -1862,12 +1869,15 @@ def leaderboard_view(request):
 
     leaderboard = RewardService.get_leaderboard(institution=institution, limit=25)
     all_badges = Badge.objects.all().order_by('points_threshold')
+    all_milestones = MilestoneReward.objects.filter(is_active=True).order_by('returns_required')
 
     user_transactions = None
     user_badges = []
     user_rank = None
+    user_milestone_progress = None
 
     if request.user.is_authenticated:
+        user_milestone_progress = RewardService.get_user_milestone_progress(request.user)
         user_transactions = request.user.reward_transactions.select_related('item', 'handover')[:10]
         user_badges = [ub.badge for ub in request.user.badges.select_related('badge')]
         for entry in leaderboard:
@@ -1878,6 +1888,8 @@ def leaderboard_view(request):
     return render(request, 'items/leaderboard.html', {
         'leaderboard': leaderboard,
         'all_badges': all_badges,
+        'all_milestones': all_milestones,
+        'user_milestone_progress': user_milestone_progress,
         'user_transactions': user_transactions,
         'user_badges': user_badges,
         'user_rank': user_rank,

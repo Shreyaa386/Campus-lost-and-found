@@ -16,6 +16,8 @@ from .models import (
     RewardRule,
     RewardTransaction,
     UserBadge,
+    MilestoneReward,
+    UserMilestoneReward,
 )
 
 
@@ -130,6 +132,22 @@ class RewardTransactionAdmin(admin.ModelAdmin):
     list_filter = ('transaction_type', 'created_at')
     search_fields = ('user__username', 'description')
     readonly_fields = ('created_at',)
+
+
+@admin.register(MilestoneReward)
+class MilestoneRewardAdmin(admin.ModelAdmin):
+    list_display = ('title', 'returns_required', 'slug', 'is_active', 'created_at')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('title', 'description', 'badge_name')
+    ordering = ('returns_required',)
+
+
+@admin.register(UserMilestoneReward)
+class UserMilestoneRewardAdmin(admin.ModelAdmin):
+    list_display = ('user', 'milestone', 'item', 'awarded_at')
+    list_filter = ('milestone', 'awarded_at')
+    search_fields = ('user__username', 'milestone__title')
+    readonly_fields = ('awarded_at',)
 
 
 @admin.register(Badge)

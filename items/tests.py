@@ -23,6 +23,8 @@ from items.models import (
     RewardRule,
     RewardTransaction,
     UserBadge,
+    MilestoneReward,
+    UserMilestoneReward,
 )
 from items.services import (
     CommunicationService,
@@ -1475,5 +1477,317 @@ class PriorityManagementFeatureTest(TestCase):
         # Check rendered HTML contains specific error messages
         self.assertContains(res, 'The date cannot be in the future.')
         self.assertContains(res, 'Please provide a detailed description')
+
+
+class CampusLocationsAndMilestoneRewardsTest(TestCase):
+    """
+    Tests for:
+    1. Exactly 62 campus locations in Lost and Found forms.
+    2. Preservation of legacy reports and database relationships.
+    3. Academic Duty Leave (DL) milestone rewards:
+       - 1 item -> 2 DL
+       - 5 items -> 4 DL
+       - More than 5 items (6+) -> 1 Week DL
+       - Single award per milestone (no duplicates)
+    4. Only verified returns counted (no rewards for lost reports, pending/rejected claims).
+    5. Dashboard and Leaderboard display.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.institution = Institution.objects.create(
+            name="Lovely Professional University (LPU), Phagwara, Punjab",
+            short_name="LPU"
+        )
+        self.category = Category.objects.create(
+            name="Electronics",
+            slug="electronics",
+            institution=self.institution
+        )
+        self.student1 = User.objects.create_user(
+            username='arjun_finder',
+            email='arjun@lpu.in',
+            password='Password@123',
+            student_id='LPU-11001',
+            role=User.ROLE_STUDENT,
+            institution=self.institution,
+            first_name='Arjun',
+            last_name='Kumar'
+        )
+        self.student2 = User.objects.create_user(
+            username='rohit_owner',
+            email='rohit@lpu.in',
+            password='Password@123',
+            student_id='LPU-11002',
+            role=User.ROLE_STUDENT,
+            institution=self.institution,
+            first_name='Rohit',
+            last_name='Verma'
+        )
+        # Seed the 62 campus locations and milestone rewards
+        call_command('seed_campus_data')
+
+    def test_all_62_locations_in_lost_and_found_forms(self):
+        """All 62 locations appear in both Lost Item and Found Item forms in correct order."""
+        from items.forms import ItemReportForm
+
+        expected_names = [f"Block {i}" for i in range(1, 57)] + [
+            "Central Library", "SDMA", "DSW", "UniMall", "Main Gate", "Food Court"
+        ]
+        self.assertEqual(len(expected_names), 62)
+
+        # Check Lost Item form queryset
+        form_lost = ItemReportForm(user=self.student1, report_type=Item.REPORT_TYPE_LOST)
+        loc_qs_lost = list(form_lost.fields['location'].queryset)
+        self.assertEqual(len(loc_qs_lost), 62)
+        self.assertEqual([loc.name for loc in loc_qs_lost], expected_names)
+
+        # Check Found Item form queryset
+        form_found = ItemReportForm(user=self.student1, report_type=Item.REPORT_TYPE_FOUND)
+        loc_qs_found = list(form_found.fields['location'].queryset)
+        self.assertEqual(len(loc_qs_found), 62)
+        self.assertEqual([loc.name for loc in loc_qs_found], expected_names)
+
+        # Verify rendered HTML on Lost Item page
+        self.client.force_login(self.student1)
+        res_lost = self.client.get(reverse('items:report_item', kwargs={'report_type': 'lost'}))
+        self.assertEqual(res_lost.status_code, 200)
+        self.assertContains(res_lost, 'Block 1')
+        self.assertContains(res_lost, 'Block 56')
+        self.assertContains(res_lost, 'Central Library')
+        self.assertContains(res_lost, 'UniMall')
+        self.assertContains(res_lost, 'Food Court')
+
+        # Verify rendered HTML on Found Item page
+        res_found = self.client.get(reverse('items:report_item', kwargs={'report_type': 'found'}))
+        self.assertEqual(res_found.status_code, 200)
+        self.assertContains(res_found, 'Block 1')
+        self.assertContains(res_found, 'Block 56')
+        self.assertContains(res_found, 'Central Library')
+        self.assertContains(res_found, 'Main Gate')
+        self.assertContains(res_found, 'Food Court')
+
+    def test_location_selection_saved_correctly(self):
+        """Location selection is saved correctly in database and displayed in item details."""
+        self.client.force_login(self.student1)
+        target_loc = CampusLocation.objects.get(name='Block 34', institution=self.institution)
+
+        res = self.client.post(reverse('items:report_item', kwargs={'report_type': 'lost'}), {
+            'title': 'Lost Engineering Calculator',
+            'category': self.category.pk,
+            'priority': 'medium',
+            'location': target_loc.pk,
+            'location_details': 'Room 304, Third Floor',
+            'date_lost_or_found': timezone.localdate(),
+            'description': 'Casio fx-991EX scientific calculator with stickers.',
+            'contact_preference': Item.CONTACT_EMAIL,
+        })
+        self.assertEqual(res.status_code, 302)
+        item = Item.objects.filter(title='Lost Engineering Calculator').first()
+        self.assertIsNotNone(item)
+        self.assertEqual(item.location, target_loc)
+        self.assertEqual(item.location.name, 'Block 34')
+
+        # View item detail
+        detail_res = self.client.get(reverse('items:item_detail', kwargs={'pk': item.pk}))
+        self.assertEqual(detail_res.status_code, 200)
+        self.assertContains(detail_res, 'Block 34')
+
+    def test_existing_legacy_reports_remain_accessible(self):
+        """Existing reports pointing to inactive legacy locations remain accessible and intact."""
+        legacy_loc = CampusLocation.objects.create(
+            institution=self.institution,
+            name="Old Academic Block Z (Decommissioned)",
+            building="Old Block Z",
+            is_active=False
+        )
+        item = Item.objects.create(
+            title="Old Archive Document",
+            description="Historical campus document.",
+            category=self.category,
+            institution=self.institution,
+            user=self.student1,
+            report_type=Item.REPORT_TYPE_FOUND,
+            status=Item.STATUS_OPEN,
+            location=legacy_loc,
+            date_lost_or_found=timezone.localdate()
+        )
+        self.client.force_login(self.student1)
+        detail_res = self.client.get(reverse('items:item_detail', kwargs={'pk': item.pk}))
+        self.assertEqual(detail_res.status_code, 200)
+        self.assertContains(detail_res, "Old Archive Document")
+
+    def _create_and_verify_handover(self, title, index):
+        """Helper to create and verify a handover where student1 returns an item to student2."""
+        item = Item.objects.create(
+            title=f"{title} #{index}",
+            description="Verified return test item.",
+            category=self.category,
+            institution=self.institution,
+            user=self.student1,
+            report_type=Item.REPORT_TYPE_FOUND,
+            status=Item.STATUS_CLAIMED,
+            date_lost_or_found=timezone.localdate()
+        )
+        claim = Claim.objects.create(
+            item=item,
+            claimant=self.student2,
+            status=Claim.STATUS_APPROVED,
+            identifying_details="Valid proof of ownership."
+        )
+        handover = Handover(
+            item=item,
+            claim=claim,
+            claimant=self.student2,
+            held_by=self.student1,
+            status=Handover.STATUS_INITIATED,
+            handover_location="Campus Desk"
+        )
+        plain_otp = handover.generate_otp(expiry_minutes=30)
+        handover.save()
+
+        success, _ = handover.verify_otp(plain_otp)
+        self.assertTrue(success)
+        RewardService.award_handover_reward(handover)
+        return handover
+
+    def test_milestone_rewards_and_anti_duplicate(self):
+        """
+        Verify:
+        - 1 return awards 2 DL
+        - 5 returns awards 4 DL
+        - 6 returns (> 5 items) awards 1 Week DL
+        - Rewards are not duplicated
+        """
+        # Initial state
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 0)
+        self.assertEqual(UserMilestoneReward.objects.filter(user=self.student1).count(), 0)
+
+        # 1. First Return -> Awards 2 DL
+        self._create_and_verify_handover("Returned Wallet", 1)
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 1)
+
+        earned_1 = UserMilestoneReward.objects.filter(user=self.student1)
+        self.assertEqual(earned_1.count(), 1)
+        self.assertEqual(earned_1.first().milestone.title, '2 DL')
+
+        # Check ledger
+        tx_2dl = RewardTransaction.objects.filter(
+            user=self.student1,
+            transaction_type=RewardTransaction.TYPE_MILESTONE_REWARD
+        )
+        self.assertEqual(tx_2dl.count(), 1)
+        self.assertIn('2 DL', tx_2dl.first().description)
+
+        # 2. Returns 2, 3, 4 -> Should NOT award duplicate 2 DL or premature 4 DL
+        for i in range(2, 5):
+            self._create_and_verify_handover("Returned Belonging", i)
+
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 4)
+        # Still only 1 milestone (2 DL)
+        self.assertEqual(UserMilestoneReward.objects.filter(user=self.student1).count(), 1)
+
+        # 3. Fifth Return -> Awards 4 DL
+        self._create_and_verify_handover("Returned Laptop", 5)
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 5)
+
+        earned_5 = UserMilestoneReward.objects.filter(user=self.student1).order_by('milestone__returns_required')
+        self.assertEqual(earned_5.count(), 2)
+        self.assertEqual(earned_5[0].milestone.title, '2 DL')
+        self.assertEqual(earned_5[1].milestone.title, '4 DL')
+
+        # 4. Sixth Return (> 5 items) -> Awards 1 Week DL
+        self._create_and_verify_handover("Returned Smartphone", 6)
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 6)
+
+        earned_6 = UserMilestoneReward.objects.filter(user=self.student1).order_by('milestone__returns_required')
+        self.assertEqual(earned_6.count(), 3)
+        self.assertEqual(earned_6[0].milestone.title, '2 DL')
+        self.assertEqual(earned_6[1].milestone.title, '4 DL')
+        self.assertEqual(earned_6[2].milestone.title, '1 Week DL')
+
+        # 5. Seventh Return -> No additional duplicate milestone
+        self._create_and_verify_handover("Returned Watch", 7)
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 7)
+        self.assertEqual(UserMilestoneReward.objects.filter(user=self.student1).count(), 3)
+
+        # Verify progress helper
+        prog = RewardService.get_user_milestone_progress(self.student1)
+        self.assertEqual(prog['returns_count'], 7)
+        self.assertTrue(prog['all_completed'])
+        self.assertIn('2 DL', prog['earned_dl_summary'])
+        self.assertIn('4 DL', prog['earned_dl_summary'])
+        self.assertIn('1 Week DL', prog['earned_dl_summary'])
+
+    def test_unverified_and_non_return_actions_do_not_award_rewards(self):
+        """Lost reports, pending/rejected claims, and incomplete handovers never award DL."""
+        # 1. Report lost item
+        Item.objects.create(
+            title="Lost Keys",
+            description="Keychain with bike key.",
+            category=self.category,
+            institution=self.institution,
+            user=self.student1,
+            report_type=Item.REPORT_TYPE_LOST,
+            status=Item.STATUS_OPEN,
+            date_lost_or_found=timezone.localdate()
+        )
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 0)
+
+        # 2. Submit claim
+        item_found = Item.objects.create(
+            title="Found Keys",
+            description="Found bike keys.",
+            category=self.category,
+            institution=self.institution,
+            user=self.student2,
+            report_type=Item.REPORT_TYPE_FOUND,
+            status=Item.STATUS_OPEN,
+            date_lost_or_found=timezone.localdate()
+        )
+        claim = Claim.objects.create(
+            item=item_found,
+            claimant=self.student1,
+            status=Claim.STATUS_PENDING,
+            identifying_details="Honda key."
+        )
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 0)
+
+        # 3. Reject claim
+        claim.status = Claim.STATUS_REJECTED
+        claim.save()
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 0)
+
+        # 4. Handover initiated but not OTP-verified
+        h_unverified = Handover(
+            item=item_found,
+            claim=claim,
+            claimant=self.student2,
+            held_by=self.student1,
+            status=Handover.STATUS_INITIATED,
+            handover_location="Campus Desk"
+        )
+        h_unverified.generate_otp(expiry_minutes=30)
+        h_unverified.save()
+        self.assertEqual(RewardService.get_user_successful_returns_count(self.student1), 0)
+        self.assertEqual(UserMilestoneReward.objects.filter(user=self.student1).count(), 0)
+
+    def test_dashboard_and_leaderboard_display_updated_rewards(self):
+        """Dashboard and Leaderboard display updated DL rewards and ranks."""
+        self._create_and_verify_handover("Returned Backpack", 1)
+
+        self.client.force_login(self.student1)
+        dash_res = self.client.get(reverse('items:dashboard'))
+        self.assertEqual(dash_res.status_code, 200)
+        self.assertContains(dash_res, "Academic Duty Leave (DL) Rewards")
+        self.assertContains(dash_res, "2 DL Earned")
+
+        # Leaderboard test
+        lb_res = self.client.get(reverse('items:leaderboard'))
+        self.assertEqual(lb_res.status_code, 200)
+        self.assertContains(lb_res, "Official Academic Duty Leave (DL) Milestone Rewards")
+        self.assertContains(lb_res, "Arjun K.")
+        self.assertContains(lb_res, "2 DL")
+
 
 
